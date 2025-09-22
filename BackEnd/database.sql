@@ -1,5 +1,6 @@
 CREATE DATABASE IF NOT EXISTS scheduler_db;
 USE scheduler_db;
+/*
 
 -- Admins
 CREATE TABLE IF NOT EXISTS admin (
@@ -64,3 +65,4 @@ CREATE TABLE IF NOT EXISTS bookings (
     FOREIGN KEY (school_id) REFERENCES schools(school_id) ON DELETE CASCADE,
     FOREIGN KEY (schedule_id) REFERENCES available_time(schedule_id) ON DELETE CASCADE
 );
+*/
