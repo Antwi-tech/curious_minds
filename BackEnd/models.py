@@ -1,5 +1,5 @@
 # Third file to create is the models file. This is to create database tables
-from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, Text, Boolean, text
+from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, Text, Boolean, text,UniqueConstraint,CheckConstraint, and_, Session, or_
 from sqlalchemy.orm import declarative_base, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -15,6 +15,16 @@ class PasswordMixin:
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+def is_overlapping(session: Session, company_id: int, start_date, end_date) -> bool:
+    return session.query(AvailableTime).filter(
+        AvailableTime.company_id == company_id,
+        or_(
+            and_(AvailableTime.start_date <= start_date, AvailableTime.end_date > start_date),
+            and_(AvailableTime.start_date < end_date, AvailableTime.end_date >= end_date),
+            and_(AvailableTime.start_date >= start_date, AvailableTime.end_date <= end_date),
+        )
+    ).first() is not None    
+
 
 class Admin(Base, PasswordMixin):
     __tablename__ = "admins"
@@ -23,7 +33,7 @@ class Admin(Base, PasswordMixin):
     first_name = Column(String(100), nullable=False)
     middle_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
-    email = Column(String(100), nullable=False, unique=True, index=True)  # ✅ indexed for login/search
+    email = Column(String(100), nullable=False, unique=True, index=True)  # indexed for login/search
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)  # ✅ faster sorting/filtering
 
 
@@ -31,15 +41,15 @@ class School(Base, PasswordMixin):
     __tablename__ = "schools"
 
     school_id = Column(Integer, primary_key=True, autoincrement=True)
-    school_name = Column(String(255), nullable=False, index=True)  # ✅ often searched by name
-    email = Column(String(100), nullable=False, unique=True, index=True)  # ✅ for login
+    school_name = Column(String(255), nullable=False, index=True)  # search by name
+    email = Column(String(100), nullable=False, unique=True, index=True)  # for login
     school_address = Column(String(255), nullable=False)
-    region = Column(String(100), nullable=False, index=True)  # ✅ filter schools by region
+    region = Column(String(100), nullable=False, index=True)  # filter schools by region
     contact_person = Column(String(100), nullable=False)
-    phone_number = Column(String(20), nullable=False, index=True)  # ✅ sometimes searched
+    phone_number = Column(String(20), nullable=False, index=True)  # sometimes searched
     website = Column(String(100), nullable=True)
     description = Column(Text, nullable=False)
-    is_verified = Column(Boolean, default=False, index=True)  # ✅ filter verified schools
+    is_verified = Column(Boolean, default=False, index=True)  # filter verified schools
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
 
     bookings = relationship("Booking", back_populates="school", cascade="all, delete-orphan")
@@ -49,14 +59,14 @@ class Company(Base, PasswordMixin):
     __tablename__ = "companies"
 
     company_id = Column(Integer, primary_key=True, autoincrement=True)
-    company_name = Column(String(255), nullable=False, index=True)  # ✅ search by name
-    company_email = Column(String(100), nullable=False, unique=True, index=True)  # ✅ for login
-    industry_type = Column(String(100), nullable=False, index=True)  # ✅ filter by industry
+    company_name = Column(String(255), nullable=False, index=True)  # search by name
+    company_email = Column(String(100), nullable=False, unique=True, index=True)  # for login
+    industry_type = Column(String(100), nullable=False, index=True)  # filter by industry
     contact_person = Column(String(100), nullable=False)
-    phone_number = Column(String(20), nullable=False, index=True)  # ✅ sometimes searched
+    phone_number = Column(String(20), nullable=False, index=True)  # sometimes searched
     website = Column(String(100), nullable=True)
     description = Column(Text, nullable=False)
-    is_verified = Column(Boolean, default=False, index=True)  # ✅ filter verified companies
+    is_verified = Column(Boolean, default=False, index=True)  # filter verified companies
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
 
     available_times = relationship("AvailableTime", back_populates="company", cascade="all, delete-orphan")
@@ -66,28 +76,36 @@ class AvailableTime(Base):
     __tablename__ = "available_times"
 
     schedule_id = Column(Integer, primary_key=True, autoincrement=True)
-    company_id = Column(Integer, ForeignKey("companies.company_id", ondelete="CASCADE"), nullable=False, index=True)  # ✅ FK joins
-    start_date = Column(DateTime, nullable=False, index=True)  # ✅ scheduling queries
+    company_id = Column(Integer, ForeignKey("companies.company_id", ondelete="CASCADE"), nullable=False, index=True)  # FK joins
+    start_date = Column(DateTime, nullable=False, index=True)  # scheduling queries
     end_date = Column(DateTime, nullable=False, index=True)
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
 
     company = relationship("Company", back_populates="available_times")
     bookings = relationship("Booking", back_populates="available_time", cascade="all, delete-orphan")
+    
+    __table_args__ = (
+        CheckConstraint("end_date > start_date", name = "check_valid_schedule_dates"),
+    )
 
 
 class Booking(Base):
     __tablename__ = "bookings"
 
     booking_id = Column(Integer, primary_key=True, autoincrement=True)
-    schedule_id = Column(Integer, ForeignKey("available_times.schedule_id", ondelete="CASCADE"), nullable=False, index=True)  # ✅ FK joins
-    school_id = Column(Integer, ForeignKey("schools.school_id", ondelete="CASCADE"), nullable=False, index=True)  # ✅ FK joins
+    schedule_id = Column(Integer, ForeignKey("available_times.schedule_id", ondelete="CASCADE"), nullable=False, index=True)  # FK joins
+    school_id = Column(Integer, ForeignKey("schools.school_id", ondelete="CASCADE"), nullable=False, index=True)  # FK joins
+    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     status = Column(
         Enum("pending", "confirmed", "cancelled", name="booking_status"),
         nullable=False,
         server_default=text("'pending'"),
-        index=True  # ✅ filter bookings by status
+        index=True  # filter bookings by status
     )
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
 
     school = relationship("School", back_populates="bookings")
     available_time = relationship("AvailableTime", back_populates="bookings")
+    
+    __table_args__ = (
+        UniqueConstraint("schedule_id", "school_id" , name= "uq_school_schedule_booking"),
+    )
