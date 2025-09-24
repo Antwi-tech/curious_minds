@@ -1,4 +1,4 @@
-# Third file to create is the modles file. This is to create databse tables
+# Third file to create is the models file. This is to create database tables
 from sqlalchemy import Column, Integer, String, ForeignKey, Enum, DateTime, Text, Boolean, text
 from sqlalchemy.orm import declarative_base, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -23,24 +23,24 @@ class Admin(Base, PasswordMixin):
     first_name = Column(String(100), nullable=False)
     middle_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
-    email = Column(String(100), nullable=False, unique=True)
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    email = Column(String(100), nullable=False, unique=True, index=True)  # ✅ indexed for login/search
+    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)  # ✅ faster sorting/filtering
 
 
 class School(Base, PasswordMixin):
     __tablename__ = "schools"
 
     school_id = Column(Integer, primary_key=True, autoincrement=True)
-    school_name = Column(String(255), nullable=False)
-    email = Column(String(100), nullable=False, unique=True)
+    school_name = Column(String(255), nullable=False, index=True)  # ✅ often searched by name
+    email = Column(String(100), nullable=False, unique=True, index=True)  # ✅ for login
     school_address = Column(String(255), nullable=False)
-    region = Column(String(100), nullable=False)
+    region = Column(String(100), nullable=False, index=True)  # ✅ filter schools by region
     contact_person = Column(String(100), nullable=False)
-    phone_number = Column(String(20), nullable=False)
+    phone_number = Column(String(20), nullable=False, index=True)  # ✅ sometimes searched
     website = Column(String(100), nullable=True)
     description = Column(Text, nullable=False)
-    is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    is_verified = Column(Boolean, default=False, index=True)  # ✅ filter verified schools
+    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
 
     bookings = relationship("Booking", back_populates="school", cascade="all, delete-orphan")
 
@@ -49,15 +49,15 @@ class Company(Base, PasswordMixin):
     __tablename__ = "companies"
 
     company_id = Column(Integer, primary_key=True, autoincrement=True)
-    company_name = Column(String(255), nullable=False)
-    company_email = Column(String(100), nullable=False, unique=True)
-    industry_type = Column(String(100), nullable=False)
+    company_name = Column(String(255), nullable=False, index=True)  # ✅ search by name
+    company_email = Column(String(100), nullable=False, unique=True, index=True)  # ✅ for login
+    industry_type = Column(String(100), nullable=False, index=True)  # ✅ filter by industry
     contact_person = Column(String(100), nullable=False)
-    phone_number = Column(String(20), nullable=False)
+    phone_number = Column(String(20), nullable=False, index=True)  # ✅ sometimes searched
     website = Column(String(100), nullable=True)
     description = Column(Text, nullable=False)
-    is_verified = Column(Boolean, default=False)
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    is_verified = Column(Boolean, default=False, index=True)  # ✅ filter verified companies
+    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
 
     available_times = relationship("AvailableTime", back_populates="company", cascade="all, delete-orphan")
 
@@ -66,10 +66,10 @@ class AvailableTime(Base):
     __tablename__ = "available_times"
 
     schedule_id = Column(Integer, primary_key=True, autoincrement=True)
-    company_id = Column(Integer, ForeignKey("companies.company_id", ondelete="CASCADE"), nullable=False)
-    start_date = Column(DateTime, nullable=False)
-    end_date = Column(DateTime, nullable=False)
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    company_id = Column(Integer, ForeignKey("companies.company_id", ondelete="CASCADE"), nullable=False, index=True)  # ✅ FK joins
+    start_date = Column(DateTime, nullable=False, index=True)  # ✅ scheduling queries
+    end_date = Column(DateTime, nullable=False, index=True)
+    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
 
     company = relationship("Company", back_populates="available_times")
     bookings = relationship("Booking", back_populates="available_time", cascade="all, delete-orphan")
@@ -79,14 +79,15 @@ class Booking(Base):
     __tablename__ = "bookings"
 
     booking_id = Column(Integer, primary_key=True, autoincrement=True)
-    schedule_id = Column(Integer, ForeignKey("available_times.schedule_id", ondelete="CASCADE"), nullable=False)
-    school_id = Column(Integer, ForeignKey("schools.school_id", ondelete="CASCADE"), nullable=False)
+    schedule_id = Column(Integer, ForeignKey("available_times.schedule_id", ondelete="CASCADE"), nullable=False, index=True)  # ✅ FK joins
+    school_id = Column(Integer, ForeignKey("schools.school_id", ondelete="CASCADE"), nullable=False, index=True)  # ✅ FK joins
     status = Column(
         Enum("pending", "confirmed", "cancelled", name="booking_status"),
         nullable=False,
-        server_default=text("'pending'")
+        server_default=text("'pending'"),
+        index=True  # ✅ filter bookings by status
     )
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
 
     school = relationship("School", back_populates="bookings")
     available_time = relationship("AvailableTime", back_populates="bookings")
