@@ -4,18 +4,6 @@ from sqlalchemy.orm import declarative_base, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 Base = declarative_base() 
 
-"""
--- Admins
-CREATE TABLE IF NOT EXISTS admin (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-"""
-
 
 class admin(Base):
     __tablename__="admin"
@@ -32,26 +20,8 @@ class admin(Base):
     def check_password(self,password):
         return check_password_hash(self.password_hash,password)
     
-
-"""
--- Schools
-CREATE TABLE IF NOT EXISTS schools (
-    school_id INT AUTO_INCREMENT PRIMARY KEY,
-    school_name VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    address VARCHAR(255),
-    region VARCHAR(100),
-    contact_person VARCHAR(100),
-    phone_number VARCHAR(20),
-    website VARCHAR(100),
-    description TEXT,
-    is_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-"""
-class schools(Base):
-    __tablename__ = "schools"    
+class school(Base):
+    __tablename__ = "school"    
     school_id = Column(Integer, primary_key=True, autoincrement=True)
     school_name = Column(String(255),nullable=False)
     email = Column(String(100), nullable=False,unique=True)
@@ -65,12 +35,52 @@ class schools(Base):
     is_verified = Column(Enum('True'| 'False'), default='False')
     created_at = Column(DateTime, nullable=False)
     
-    booking = relationship("bookings",back_populates="school", cascade="all,delate-orphan")
+    booking = relationship("bookings",back_populates="school", cascade="all,delete-orphan")
     
     def set_password(self,password):
         self.passwword_hash = generate_password_hash(password)
     def check_password(self,password):
         return check_password_hash(self.password_hash,password)
+    
+class company(Base):
+    __tablename__ = "company"
+    company_id = Column(Integer , primary_key=True, autoincrement=True)
+    company_name = Column(String(255), nullable=False)
+    company_email = Column(String(100), nullable=False, unique=True)
+    password_hash = Column(String(255), nullable=False)
+    industry_type = Column(String(100), nullable=False)
+    contact_person = Column(String(100), nullable=False)
+    phone_number  = Column(String(20), nullable=False)
+    website = Column(String(100), nullable=True)
+    description = Column(Text, nullable=False)
+    is_verified = Column(Enum('True'| 'False'), default='False')
+    created_at = Column(DateTime, nullable=False)
+    
+    available_time = relationship("available_time", back_populates="company", cascade = "all, delete_orphan")
+
+    def set_password(self,password):
+        self.set_password = generate_password_hash(password)
+    def check_password(self,password):  
+        self.check_password = check_password_hash(password)
+        
+class available_time(Base):
+    __tablename__ = 'available_time'
+    schedule_id = Column(Integer, primary_key=True, autoincrement=True)
+    company_id = Column(ForeignKey, nullable=False)
+    start_date = Column(DateTime)
+    end_date = Column(DateTime, nullable=False)
+    
+    company = relationship("company", back_populates = "available_time")
+    
+  
+class booking(Base):
+    __tablename__ = 'booking'  
+    school_id = Column(Integer, primary_key=True, autoincrement=True)
+    schedule_id = Column(ForeignKey, Integer)
+    status = Column(Enum('pending'| 'confirmed' | 'cancelled') default='pending')
+    created_at = Column(DateTime, nullable=False)
+    
+    school = relationship("School", back_populates="booking")
     
     
     
