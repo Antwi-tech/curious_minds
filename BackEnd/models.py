@@ -24,8 +24,14 @@ class admin(Base):
     middle_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
     password_hash = Column(String(255), nullable=False)
-        
-
+    email = Column(String(100), nullable=False, unique =True)  
+    created_at = Column(DateTime, nullable=False)
+      
+    def set_password(self,password):
+        self.passwword_hash = generate_password_hash(password)
+    def check_password(self,password):
+        return check_password_hash(self.password_hash,password)
+    
 
 """
 -- Schools
@@ -60,5 +66,11 @@ class schools(Base):
     created_at = Column(DateTime, nullable=False)
     
     booking = relationship("bookings",back_populates="school", cascade="all,delate-orphan")
+    
+    def set_password(self,password):
+        self.passwword_hash = generate_password_hash(password)
+    def check_password(self,password):
+        return check_password_hash(self.password_hash,password)
+    
     
     
