@@ -51,7 +51,7 @@ Stores school accounts that book company slots.
 | `created_at`     | TIMESTAMP    | Auto set on creation             |
 | `updated_at`     | TIMESTAMP    | Auto updated on modification     |
 
-🔗 **Relations:**
+**Relations:**
 
 * A school can have **many bookings**.
 * If a school is deleted → all its bookings are deleted (`ON DELETE CASCADE`).
@@ -77,7 +77,7 @@ Stores company accounts that create available schedules.
 | `created_at`     | TIMESTAMP    | Auto set on creation             |
 | `updated_at`     | TIMESTAMP    | Auto updated on modification     |
 
-🔗 **Relations:**
+**Relations:**
 
 * A company can have **many available time slots**.
 * If a company is deleted → all its slots are deleted (`ON DELETE CASCADE`).
@@ -97,11 +97,11 @@ Stores company schedules available for schools to book.
 | `created_at`  | TIMESTAMP | Auto set on creation              |
 | `updated_at`  | TIMESTAMP | Auto updated on modification      |
 
-🔐 **Constraints:**
+ **Constraints:**
 
 * `end_date > start_date` enforced (`CheckConstraint`).
 
-🔗 **Relations:**
+**Relations:**
 
 * A schedule can have **many bookings**.
 * If a schedule is deleted → related bookings are deleted (`ON DELETE CASCADE`).
@@ -121,13 +121,13 @@ Stores reservations made by schools.
 | `created_at`  | TIMESTAMP | Auto set on creation                     |
 | `updated_at`  | TIMESTAMP | Auto updated on modification             |
 
-🔐 **Constraints:**
+**Constraints:**
 
 * A school cannot book the same schedule twice (`UniqueConstraint(schedule_id, school_id)`).
 
 ---
 
-## 🔗 Relationships Summary
+## Relationships Summary
 
 * **Admin** → manages accounts and verifications.
 * **Company** → creates `available_times`.
