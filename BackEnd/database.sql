@@ -1,3 +1,5 @@
+-- First file to create is the database
+
 CREATE DATABASE IF NOT EXISTS scheduler_db;
 USE scheduler_db;
 /*
