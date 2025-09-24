@@ -1,6 +1,6 @@
 # Third file to create is the modles file. This is to create databse tables
 from sqlalchemy import Column, Integer , String, ForeignKey, Enum , DateTime , Text , CHAR
-from sqlalchemy.orm import declarative_base, relationsship
+from sqlalchemy.orm import declarative_base, relationship
 from werkzeug.security import generate_password_hash, check_password_hash
 Base = declarative_base() 
 
@@ -24,6 +24,8 @@ class admin(Base):
     middle_name = Column(String(100), nullable=True)
     last_name = Column(String(100), nullable=True)
     password_hash = Column(String(255), nullable=False)
+        
+
 
 """
 -- Schools
@@ -50,4 +52,13 @@ class schools(Base):
     password_hash = Column(String(255), nullable=False)
     school_address = Column(String(255), nullable=False)
     region = Column(String(100), nulable=False)
+    contact_person = Column(String(100), nullable= False)
+    phone_number = Column(String(20), nullable=False)
+    website = Column(String(100), nullable=True)
+    description = Column(Text, nullable=False)
+    is_verified = Column(Enum('True'| 'False'), default='False')
+    created_at = Column(DateTime, nullable=False)
+    
+    booking = relationship("bookings",back_populates="school", cascade="all,delate-orphan")
+    
     
