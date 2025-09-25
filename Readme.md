@@ -1,121 +1,144 @@
-# Scheduler Database Documentation
+# Scheduler Database Documentation (SQLAlchemy ORM)
 
 ## Overview
 
-This database schema powers the **Scheduler System**, where **companies** create available time slots and **schools** can book those slots. An **admin** manages and verifies all accounts before they become active.
+This schema powers the **Scheduler System**, where:
 
-The schema is implemented in **MySQL** and uses foreign keys to maintain relational integrity.
+* **Companies** create availability schedules.
+* **Schools** register and book those slots.
+* **Admins** manage accounts and verifications.
+
+The schema is implemented with **SQLAlchemy ORM** and enforces **data integrity** using foreign keys, unique constraints, and checks.
 
 ---
 
 ## Database: `scheduler_db`
 
-### 1. **Admins (`admin`)**
+### 1. **Admins (`admins`)**
 
-Stores platform administrators who manage approvals and oversee the system.
+Stores platform administrators.
 
-| Field           | Type         | Description                 |
-| --------------- | ------------ | --------------------------- |
-| `id`            | INT (PK)     | Unique admin ID             |
-| `username`      | VARCHAR(50)  | Admin username (unique)     |
-| `password_hash` | VARCHAR(255) | Hashed admin password       |
-| `email`         | VARCHAR(100) | Admin email (unique)        |
-| `created_at`    | TIMESTAMP    | Auto timestamp when created |
+| Field           | Type         | Description                  |
+| --------------- | ------------ | ---------------------------- |
+| `id`            | INT (PK)     | Unique admin ID              |
+| `first_name`    | VARCHAR(100) | First name                   |
+| `middle_name`   | VARCHAR(100) | Optional middle name         |
+| `last_name`     | VARCHAR(100) | Last name                    |
+| `email`         | VARCHAR(100) | Unique email (indexed)       |
+| `password_hash` | VARCHAR(255) | Hashed password              |
+| `created_at`    | TIMESTAMP    | Auto set on creation         |
+| `updated_at`    | TIMESTAMP    | Auto updated on modification |
 
 ---
 
 ### 2. **Schools (`schools`)**
 
-Stores school accounts that can register and book available company slots.
+Stores school accounts that book company slots.
 
-| Field            | Type         | Description                          |
-| ---------------- | ------------ | ------------------------------------ |
-| `school_id`      | INT (PK)     | Unique school ID                     |
-| `school_name`    | VARCHAR(100) | Name of the school                   |
-| `email`          | VARCHAR(100) | School login email (unique)          |
-| `password_hash`  | VARCHAR(255) | Hashed password                      |
-| `address`        | VARCHAR(255) | School address                       |
-| `region`         | VARCHAR(100) | Region in Ghana                      |
-| `contact_person` | VARCHAR(100) | Contact person’s full name           |
-| `phone_number`   | VARCHAR(20)  | Contact phone number                 |
-| `website`        | VARCHAR(100) | Optional school website              |
-| `description`    | TEXT         | Description / notes about the school |
-| `is_verified`    | BOOLEAN      | Set `TRUE` when approved by admin    |
-| `created_at`     | TIMESTAMP    | Account creation time                |
+| Field            | Type         | Description                      |
+| ---------------- | ------------ | -------------------------------- |
+| `school_id`      | INT (PK)     | Unique school ID                 |
+| `school_name`    | VARCHAR(255) | School name (indexed)            |
+| `email`          | VARCHAR(100) | Unique login email (indexed)     |
+| `password_hash`  | VARCHAR(255) | Hashed password                  |
+| `school_address` | VARCHAR(255) | Physical address                 |
+| `region`         | VARCHAR(100) | Region (indexed)                 |
+| `contact_person` | VARCHAR(100) | Full name of contact person      |
+| `phone_number`   | VARCHAR(20)  | Phone number (indexed)           |
+| `website`        | VARCHAR(100) | Optional website                 |
+| `description`    | TEXT         | Notes / description              |
+| `is_verified`    | BOOLEAN      | Verified flag (default: `FALSE`) |
+| `created_at`     | TIMESTAMP    | Auto set on creation             |
+| `updated_at`     | TIMESTAMP    | Auto updated on modification     |
+
+**Relations:**
+
+* A school can have **many bookings**.
+* If a school is deleted → all its bookings are deleted (`ON DELETE CASCADE`).
 
 ---
 
 ### 3. **Companies (`companies`)**
 
-Stores company accounts that create availability schedules for schools to book.
+Stores company accounts that create available schedules.
 
-| Field            | Type         | Description                           |
-| ---------------- | ------------ | ------------------------------------- |
-| `company_id`     | INT (PK)     | Unique company ID                     |
-| `company_name`   | VARCHAR(100) | Name of the company                   |
-| `email`          | VARCHAR(100) | Company login email (unique)          |
-| `password_hash`  | VARCHAR(255) | Hashed password                       |
-| `industry_type`  | VARCHAR(100) | Type of industry (Tech, Health, etc.) |
-| `description`    | TEXT         | Description of the company            |
-| `address`        | VARCHAR(255) | Company address                       |
-| `region`         | VARCHAR(100) | Region in Ghana                       |
-| `contact_person` | VARCHAR(100) | Contact person’s full name            |
-| `phone_number`   | VARCHAR(20)  | Contact phone number                  |
-| `website`        | VARCHAR(100) | Optional company website              |
-| `is_verified`    | BOOLEAN      | Set `TRUE` when approved by admin     |
-| `created_at`     | TIMESTAMP    | Account creation time                 |
+| Field            | Type         | Description                      |
+| ---------------- | ------------ | -------------------------------- |
+| `company_id`     | INT (PK)     | Unique company ID                |
+| `company_name`   | VARCHAR(255) | Company name (indexed)           |
+| `company_email`  | VARCHAR(100) | Unique login email (indexed)     |
+| `password_hash`  | VARCHAR(255) | Hashed password                  |
+| `industry_type`  | VARCHAR(100) | Industry type (indexed)          |
+| `contact_person` | VARCHAR(100) | Full name of contact person      |
+| `phone_number`   | VARCHAR(20)  | Phone number (indexed)           |
+| `website`        | VARCHAR(100) | Optional website                 |
+| `description`    | TEXT         | Company description              |
+| `is_verified`    | BOOLEAN      | Verified flag (default: `FALSE`) |
+| `created_at`     | TIMESTAMP    | Auto set on creation             |
+| `updated_at`     | TIMESTAMP    | Auto updated on modification     |
+
+**Relations:**
+
+* A company can have **many available time slots**.
+* If a company is deleted → all its slots are deleted (`ON DELETE CASCADE`).
 
 ---
 
-### 4. **Available Time Slots (`available_time`)**
+### 4. **Available Time Slots (`available_times`)**
 
-Stores time slots created by companies for schools to book.
+Stores company schedules available for schools to book.
 
-| Field            | Type     | Description                       |
-| ---------------- | -------- | --------------------------------- |
-| `schedule_id`    | INT (PK) | Unique schedule ID                |
-| `company_id`     | INT (FK) | References `companies.company_id` |
-| `start_datetime` | DATETIME | Slot start date and time          |
-| `end_datetime`   | DATETIME | Slot end date and time            |
-| `is_booked`      | BOOLEAN  | `TRUE` if already booked          |
+| Field         | Type      | Description                       |
+| ------------- | --------- | --------------------------------- |
+| `schedule_id` | INT (PK)  | Unique schedule ID                |
+| `company_id`  | INT (FK)  | References `companies.company_id` |
+| `start_date`  | DATETIME  | Schedule start date/time          |
+| `end_date`    | DATETIME  | Schedule end date/time            |
+| `created_at`  | TIMESTAMP | Auto set on creation              |
+| `updated_at`  | TIMESTAMP | Auto updated on modification      |
 
-🔗 **Relations:**
+ **Constraints:**
 
-* A `company` can create many `available_time` slots.
-* If a company is deleted, all their slots are deleted too (`ON DELETE CASCADE`).
+* `end_date > start_date` enforced (`CheckConstraint`).
+
+**Relations:**
+
+* A schedule can have **many bookings**.
+* If a schedule is deleted → related bookings are deleted (`ON DELETE CASCADE`).
 
 ---
 
 ### 5. **Bookings (`bookings`)**
 
-Stores reservations made by schools against available slots.
+Stores reservations made by schools.
 
-| Field         | Type      | Description                             |
-| ------------- | --------- | --------------------------------------- |
-| `booking_id`  | INT (PK)  | Unique booking ID                       |
-| `school_id`   | INT (FK)  | References `schools.school_id`          |
-| `schedule_id` | INT (FK)  | References `available_time.schedule_id` |
-| `status`      | ENUM      | `pending`, `confirmed`, or `cancelled`  |
-| `created_at`  | TIMESTAMP | Booking creation time                   |
+| Field         | Type      | Description                              |
+| ------------- | --------- | ---------------------------------------- |
+| `booking_id`  | INT (PK)  | Unique booking ID                        |
+| `schedule_id` | INT (FK)  | References `available_times.schedule_id` |
+| `school_id`   | INT (FK)  | References `schools.school_id`           |
+| `status`      | ENUM      | `pending`, `confirmed`, `cancelled`      |
+| `created_at`  | TIMESTAMP | Auto set on creation                     |
+| `updated_at`  | TIMESTAMP | Auto updated on modification             |
 
-🔗 **Relations:**
+**Constraints:**
 
-* A `school` can book multiple slots.
-* Each booking is tied to one `available_time` record.
+* A school cannot book the same schedule twice (`UniqueConstraint(schedule_id, school_id)`).
 
 ---
 
-## 🔗 Relationships Summary
+## Relationships Summary
 
-* **Admin**: Manages everything but does not directly create bookings or slots.
-* **Company**: Creates `available_time` slots → booked by schools.
-* **School**: Registers and books slots from companies.
-* **Bookings**: Link schools to company slots.
+* **Admin** → manages accounts and verifications.
+* **Company** → creates `available_times`.
+* **School** → books company schedules.
+* **AvailableTime** → belongs to a company, may have many bookings.
+* **Booking** → links a school to a specific time slot.
 
 ---
 
 ## ERD (Entity Relationship Diagram)
+
 ![Database diagram](ReadmeImages/database_diagram.png)
 
 ---
-
