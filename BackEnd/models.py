@@ -1,4 +1,5 @@
 # Third file to create is the models file. This is to create database tables
+from config import engine
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, Enum, DateTime, Text, Boolean, text,
     UniqueConstraint, CheckConstraint, and_, or_
@@ -143,3 +144,10 @@ class Booking(Base):
 
     def __repr__(self):
         return f"<Booking(id={self.booking_id}, status={self.status})>"
+    
+if __name__ == "__main__":
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("Tables created successfully.")
+    except Exception as e:
+        print(f"An error occurred: {e}")
