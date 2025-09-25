@@ -23,7 +23,7 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 # Dependency (per-request/session use)
 def get_db():
-    db = SessionLocal()   # fresh session per use
+    db = SessionLocal()   # <-- creates a new session for each reques
     try:
         yield db
     finally:
