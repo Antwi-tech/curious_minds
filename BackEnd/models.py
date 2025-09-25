@@ -9,7 +9,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 Base = declarative_base()
 
 
-# ---------- Password Hashing Mixin ----------
+# Password Hashing Mixin
 class PasswordMixin:
     password_hash = Column(String(255), nullable=False)
 
@@ -22,7 +22,7 @@ class PasswordMixin:
         return check_password_hash(self.password_hash, password)
 
 
-# ---------- Utility: Check Overlapping Schedules ----------
+# Utility: Check Overlapping Schedules 
 def is_overlapping(session: Session, company_id: int, start_date, end_date) -> bool:
     """Check if a new schedule overlaps with existing schedules for a company"""
     return session.query(AvailableTime).filter(
@@ -35,7 +35,7 @@ def is_overlapping(session: Session, company_id: int, start_date, end_date) -> b
     ).first() is not None
 
 
-# ---------- Admin Table ----------
+# Admin Table
 class Admin(Base, PasswordMixin):
     __tablename__ = "admins"
 
@@ -51,7 +51,7 @@ class Admin(Base, PasswordMixin):
         return f"<Admin(id={self.id}, email={self.email})>"
 
 
-# ---------- School Table ----------
+# School Table 
 class School(Base, PasswordMixin):
     __tablename__ = "schools"
 
@@ -74,7 +74,7 @@ class School(Base, PasswordMixin):
         return f"<School(id={self.school_id}, name={self.school_name})>"
 
 
-# ---------- Company Table ----------
+# Company Table 
 class Company(Base, PasswordMixin):
     __tablename__ = "companies"
 
@@ -96,7 +96,7 @@ class Company(Base, PasswordMixin):
         return f"<Company(id={self.company_id}, name={self.company_name})>"
 
 
-# ---------- Available Times Table ----------
+# Available Times Table 
 class AvailableTime(Base):
     __tablename__ = "available_times"
 
@@ -118,7 +118,7 @@ class AvailableTime(Base):
         return f"<AvailableTime(id={self.schedule_id}, company_id={self.company_id})>"
 
 
-# ---------- Booking Table ----------
+# Booking Table 
 class Booking(Base):
     __tablename__ = "bookings"
 
