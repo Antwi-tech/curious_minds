@@ -65,14 +65,17 @@ class School(Base, PasswordMixin):
     phone_number = Column(String(20), nullable=False, index=True)
     website = Column(String(100), nullable=True)
     description = Column(Text, nullable=False)
-    is_verified = Column(Boolean, default=False, index=True)
+
+    is_verified = Column(Boolean, default=False, index=True)  # Must be approved by admin
+    is_active   = Column(Boolean, default=True, index=True)   
+    
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
     bookings = relationship("Booking", back_populates="school", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<School(id={self.school_id}, name={self.school_name})>"
+        return f"<School(id={self.school_id}, name={self.school_name}, active={self.is_active})>"
 
 
 # Company Table 
@@ -87,15 +90,17 @@ class Company(Base, PasswordMixin):
     phone_number = Column(String(20), nullable=False, index=True)
     website = Column(String(100), nullable=True)
     description = Column(Text, nullable=False)
-    is_verified = Column(Boolean, default=False, index=True)
+
+    is_verified = Column(Boolean, default=False, index=True)  # Must be approved by admin
+    is_active   = Column(Boolean, default=True, index=True)   
+
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
     available_times = relationship("AvailableTime", back_populates="company", cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"<Company(id={self.company_id}, name={self.company_name})>"
-
+        return f"<Company(id={self.company_id}, name={self.company_name}, active={self.is_active})>"
 
 # Available Times Table 
 class AvailableTime(Base):
