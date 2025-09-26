@@ -67,8 +67,8 @@ class School(Base, PasswordMixin):
     description = Column(Text, nullable=False)
 
     is_verified = Column(Boolean, default=False, index=True)  # Must be approved by admin
-    is_active   = Column(Boolean, default=True, index=True)   
-    
+    is_active   = Column(Boolean, default=True, index=True)   # Soft delete flag ✅
+
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 
@@ -92,7 +92,7 @@ class Company(Base, PasswordMixin):
     description = Column(Text, nullable=False)
 
     is_verified = Column(Boolean, default=False, index=True)  # Must be approved by admin
-    is_active   = Column(Boolean, default=True, index=True)   
+    is_active   = Column(Boolean, default=True, index=True)   # Soft delete flag ✅
 
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
