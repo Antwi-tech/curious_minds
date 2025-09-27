@@ -2,6 +2,7 @@ from config import SessionLocal
 from models import School
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from typing import Optional
+from sqlalchemy import or_
 
 
 class SchoolDetails:
@@ -53,16 +54,45 @@ class SchoolDetails:
             print(f"Database error occurred: {e}")
             return None
     
-    def search_school(self, school_name: str):
-        try:
-            # Search case-insensitively for schools whose name contains the given string
-            school = (
-                self.db_session.query(School)
-                .filter(School.school_name.ilike(f"%{school_name}%"))
-                .first()
-            )
-            return school
-        except Exception as e:
-            print(f"Error occurred while retrieving school: {e}")
-            return None
    
+# search for a school
+    def search_school(self, search_term: str, page: int = 1, limit: int = 10):
+        try:
+            query = self.db_session.query(School).filter(
+                or_(
+                    School.school_name.ilike(f"%{search_term}%"),
+                    School.region.ilike(f"%{search_term}%"),
+                    School.contact_person.ilike(f"%{search_term}%"),
+                    School.email.ilike(f"%{search_term}%")
+                )
+            )
+
+            total = query.count()  # total number of matches
+
+            results = (
+                query.offset((page - 1) * limit)
+                .limit(limit)
+                .all()
+            )
+
+            return results, total
+        except Exception as e:
+            print(f"Error occurred while retrieving schools: {e}")
+            return [], 0
+
+
+# delete a school
+    def delete_school(self, school_id: int):
+            try:
+                
+                school = self.db_session.query(School).filter_by(school_id=school_id).first()
+                if not school:
+                    return None
+
+                self.db_session.delete(school)
+                self.db_session.commit()
+                return school
+            except SQLAlchemyError as e:
+                self.db_session.rollback()
+                print(f"Error deleting school: {e}")
+                return None
