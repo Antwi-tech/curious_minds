@@ -52,3 +52,17 @@ class SchoolDetails:
             self.db_session.rollback()
             print(f"Database error occurred: {e}")
             return None
+    
+    def search_school(self, school_name: str):
+        try:
+            # Search case-insensitively for schools whose name contains the given string
+            school = (
+                self.db_session.query(School)
+                .filter(School.school_name.ilike(f"%{school_name}%"))
+                .first()
+            )
+            return school
+        except Exception as e:
+            print(f"Error occurred while retrieving school: {e}")
+            return None
+   
