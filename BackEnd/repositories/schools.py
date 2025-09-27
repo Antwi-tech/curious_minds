@@ -8,7 +8,7 @@ class SchoolDetails:
     def __init__(self, db_session=session):
         self.db_session = db_session
 
-    # register / add a school
+    # register / add a school / add school feature 
     def add_school(
         self,
         school_name: str,
@@ -19,8 +19,9 @@ class SchoolDetails:
         contact_person: str,
         phone_number: str,
         description: str,
-        website: Optional[str] = None,   # optional
-        is_verified: bool = False        # default
+        website: Optional[str] = None,
+        is_verified: bool = False,
+        is_active: bool = True 
     ) -> Optional[School]:
         try:
             new_school = School(
@@ -32,7 +33,8 @@ class SchoolDetails:
                 phone_number=phone_number,
                 website=website,
                 description=description,
-                is_verified=is_verified
+                is_verified=is_verified,
+                is_active=is_active    
             )
             new_school.set_password(password)  # hash password
 
