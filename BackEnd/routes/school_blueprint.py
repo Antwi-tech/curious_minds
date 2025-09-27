@@ -56,38 +56,48 @@ def register_school():
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
     
-
-@school_dp.route("/search_school", methods=['GET'])
+# search for school by school name
+@school_dp.route("/search_school", methods=["GET"])
 def get_school():
     try:
-        # Get school_name from query parameter: /search_school?school_name=XYZ
-        school_name = request.args.get("school_name", "").strip()
+        search_term = request.args.get("q", "").strip()
+        page = int(request.args.get("page", 1))
+        limit = int(request.args.get("limit", 10))
 
-        if not school_name:
-            return jsonify({"error": "school_name parameter is required"}), 400
+        if not search_term:
+            return jsonify({"error": "Search query parameter 'q' is required"}), 400
 
-        if not school_name.replace(" ", "").isalpha():
-            return jsonify({"error": "Letters only accepted"}), 400
+        results, total = school.search_school(search_term, page, limit)
 
-        search = school.search_school(school_name)
-
-        if not search:
-            return jsonify({"message": "School not found"}), 404
+        if not results:
+            return jsonify({"message": "No schools found"}), 404
 
         return jsonify({
-            "school": {
-                "school_name": search.school_name,
-                "email": search.email,
-                "school_address": search.school_address,
-                "region": search.region,
-                "contact_person": search.contact_person,
-                "phone_number": search.phone_number,
-                "website": search.website,
-                "description": search.description,
+            "schools": [
+                {
+                    "school_id": s.school_id,
+                    "school_name": s.school_name,
+                    "email": s.email,
+                    "school_address": s.school_address,
+                    "region": s.region,
+                    "contact_person": s.contact_person,
+                    "phone_number": s.phone_number,
+                    "website": s.website,
+                    "description": s.description,
+                }
+                for s in results
+            ],
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "total_results": total,
+                "total_pages": (total + limit - 1) // limit
             },
-            "message": "School found successfully"
+            "message": "Schools found successfully"
         }), 200
 
+    except ValueError:
+        return jsonify({"error": "Invalid pagination parameters"}), 400
     except Exception as e:
         return jsonify({
             "error": "An unexpected error occurred",
