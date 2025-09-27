@@ -103,3 +103,28 @@ def get_school():
             "error": "An unexpected error occurred",
             "details": str(e)
         }), 500
+
+
+# delete school by id
+@school_dp.route("/delete/<int:school_id>", methods=["DELETE"])
+def delete_school(school_id):
+    try:
+        deleted = school.delete_school(school_id)
+
+        if not deleted:
+            return jsonify({"error": "School not found"}), 404
+
+        return jsonify({
+            "message": "School deleted successfully",
+            "deleted_school": {
+                "school_id": deleted.school_id,
+                "school_name": deleted.school_name,
+                "email": deleted.email
+            }
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "An unexpected error occurred",
+            "details": str(e)
+        }), 500
