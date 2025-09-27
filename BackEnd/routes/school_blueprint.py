@@ -55,3 +55,41 @@ def register_school():
 
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
+    
+
+@school_dp.route("/search_school", methods=['GET'])
+def get_school():
+    try:
+        # Get school_name from query parameter: /search_school?school_name=XYZ
+        school_name = request.args.get("school_name", "").strip()
+
+        if not school_name:
+            return jsonify({"error": "school_name parameter is required"}), 400
+
+        if not school_name.replace(" ", "").isalpha():
+            return jsonify({"error": "Letters only accepted"}), 400
+
+        search = school.search_school(school_name)
+
+        if not search:
+            return jsonify({"message": "School not found"}), 404
+
+        return jsonify({
+            "school": {
+                "school_name": search.school_name,
+                "email": search.email,
+                "school_address": search.school_address,
+                "region": search.region,
+                "contact_person": search.contact_person,
+                "phone_number": search.phone_number,
+                "website": search.website,
+                "description": search.description,
+            },
+            "message": "School found successfully"
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "error": "An unexpected error occurred",
+            "details": str(e)
+        }), 500
