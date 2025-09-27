@@ -1,12 +1,12 @@
 from flask import Blueprint, jsonify, request
-from BackEnd.repositories.schools import SchoolDetails
+from repositories.schools import SchoolDetails
 from sqlalchemy.exc import SQLAlchemyError
 
 school_dp = Blueprint("school", __name__)  
 school = SchoolDetails()
 
 # Register / add a school
-@school_dp.route("/school/register", methods=['POST'])   
+@school_dp.route("/register", methods=['POST'])   
 def register_school():
     data = request.get_json()
     required_fields = [
