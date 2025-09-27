@@ -1,13 +1,13 @@
-from config import session
+from config import SessionLocal
 from models import School
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from typing import Optional
 
 
 class SchoolDetails:
-    def __init__(self, db_session=session):
-        self.db_session = db_session
-
+    def __init__(self):
+        self.db_session = SessionLocal()  
+        
     # register / add a school / add school feature 
     def add_school(
         self,
