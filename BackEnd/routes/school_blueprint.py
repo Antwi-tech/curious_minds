@@ -1,7 +1,8 @@
 from flask import Blueprint, jsonify, request
 from repositories.schools import SchoolDetails
 from sqlalchemy.exc import SQLAlchemyError
-
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+    
 school_dp = Blueprint("school", __name__)  
 school = SchoolDetails()
 
@@ -128,3 +129,84 @@ def delete_school(school_id):
             "error": "An unexpected error occurred",
             "details": str(e)
         }), 500
+
+
+# School Login
+@school_dp.route("/school/login", methods=["POST"])
+def login_school():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+
+    try:
+        school = school.login_school(email, password)
+        if not school:
+            return jsonify({"error": "Invalid credentials or inactive account"}), 401
+
+        return jsonify({
+            "message": "Login successful",
+            "school": {
+                "school_id": school.school_id,
+                "school_name": school.school_name,
+                "email": school.email,
+                "region": school.region,
+                "is_active": school.is_active
+            }
+        }), 200
+    except Exception as e:
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
+
+
+# change password with athentication
+@school_dp.route("/change_password/<int:school_id>", methods=["PATCH"])
+@jwt_required()
+def change_password(school_id):
+    current_user_id = get_jwt_identity()
+
+    if current_user_id != school_id:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+
+    if not old_password or not new_password:
+        return jsonify({"error": "Both old and new passwords are required"}), 400
+
+    success = school.change_password(school_id, old_password, new_password)
+    if success:
+        return jsonify({"message": "Password updated successfully"}), 200
+    return jsonify({"error": "Failed to update password. Check old password."}), 400
+
+# Get All Schools
+@school_dp.route("/schools", methods=["GET"])
+def get_all_schools():
+    try:
+        region = request.args.get("region")
+        is_active = request.args.get("is_active")
+
+        # Convert query param "is_active" to boolean if provided
+        if is_active is not None:
+            is_active = is_active.lower() in ["true", "1", "yes"]
+
+        schools = school.get_all_schools(region=region, is_active=is_active)
+
+        return jsonify({
+            "count": len(schools),
+            "schools": [
+                {
+                    "school_id": s.school_id,
+                    "school_name": s.school_name,
+                    "email": s.email,
+                    "region": s.region,
+                    "is_active": s.is_active,
+                    "is_verified": s.is_verified
+                } for s in schools
+            ]
+        }), 200
+
+    except Exception as e:
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
