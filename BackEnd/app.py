@@ -1,9 +1,19 @@
+import os
 from flask import Flask, jsonify , request
 from routes.school_blueprint import school_dp
 from repositories import schools
+from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
 
 
+load_dotenv()
 app = Flask(__name__)
+
+# JWT configuration
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+jwt = JWTManager(app)
+
+
 app.register_blueprint(school_dp, url_prefix='/school')
 
 school = schools.SchoolDetails()
