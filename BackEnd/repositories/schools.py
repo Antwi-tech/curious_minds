@@ -97,32 +97,8 @@ class SchoolDetails:
                 print(f"Error deleting school: {e}")
                 return None
 
-    # Login school
-    def login_school(self, email: str, password: str) -> Optional[School]:
-        try:
-            school = self.db_session.query(School).filter_by(email=email, is_active=True).first()
-            if school and school.check_password(password):
-                return school
-            return None
-        except SQLAlchemyError as e:
-            print(f"Database error during login: {e}")
-            return None
 
-    # Change password
-    def change_password(self, school_id: int, new_password: str) -> bool:
-        try:
-            school = self.db_session.query(School).filter_by(school_id=school_id, is_active=True).first()
-            if not school:
-                return False
-            school.set_password(new_password)
-            self.db_session.commit()
-            return True
-        except SQLAlchemyError as e:
-            self.db_session.rollback()
-            print(f"Error changing password: {e}")
-            return False
-
-    #  Get all schools (with optional filters)
+#  Get all schools (with optional filters)
     def get_all_schools(self, region: Optional[str] = None, is_active: Optional[bool] = None):
         try:
             query = self.db_session.query(School)
@@ -137,4 +113,30 @@ class SchoolDetails:
         except SQLAlchemyError as e:
             print(f"Error fetching schools: {e}")
             return []
-            
+        
+    # Login school
+    def login_school(self, email: str, password: str) -> Optional[School]:
+        try:
+            school = self.db_session.query(School).filter_by(email=email, is_active=True).first()
+            if school and school.check_password(password):
+                return school
+            return None
+        except SQLAlchemyError as e:
+            print(f"Database error during login: {e}")
+            return None
+
+    
+    # Change password
+    def change_password(self, school_id: int, old_password: str, new_password: str) -> bool:
+        try:
+            school = self.db_session.query(School).filter_by(school_id=school_id).first()
+            if not school or not school.check_password(old_password):
+                return False
+
+            school.set_password(new_password)
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error changing password: {e}")
+            return False        
