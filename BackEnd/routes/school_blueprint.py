@@ -132,7 +132,7 @@ def delete_school(school_id):
 
 
 # School Login
-@school_dp.route("/school/login", methods=["POST"])
+@school_dp.route("/login", methods=["POST"])
 def login_school():
     data = request.get_json()
     email = data.get("email")
@@ -142,31 +142,34 @@ def login_school():
         return jsonify({"error": "Email and password are required"}), 400
 
     try:
-        school = school.login_school(email, password)
-        if not school:
+        school_obj = school.login_school(email, password)  # careful: use your repo object, not blueprint
+        if not school_obj:
             return jsonify({"error": "Invalid credentials or inactive account"}), 401
+
+      
+        access_token = create_access_token(identity=str(school_obj.school_id))
 
         return jsonify({
             "message": "Login successful",
+            "access_token": access_token,
             "school": {
-                "school_id": school.school_id,
-                "school_name": school.school_name,
-                "email": school.email,
-                "region": school.region,
-                "is_active": school.is_active
+                "school_id": school_obj.school_id,
+                "school_name": school_obj.school_name,
+                "email": school_obj.email,
+                "region": school_obj.region,
+                "is_active": school_obj.is_active
             }
         }), 200
+
     except Exception as e:
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
-
-
+    
 # change password with athentication
 @school_dp.route("/change_password/<int:school_id>", methods=["PATCH"])
 @jwt_required()
 def change_password(school_id):
-    current_user_id = get_jwt_identity()
-
-    if current_user_id != school_id:
+    current_user_id = get_jwt_identity()  # returns string now
+    if int(current_user_id) != school_id:  # ✅ cast back to int for comparison
         return jsonify({"error": "Unauthorized"}), 403
 
     data = request.get_json()
@@ -180,7 +183,7 @@ def change_password(school_id):
     if success:
         return jsonify({"message": "Password updated successfully"}), 200
     return jsonify({"error": "Failed to update password. Check old password."}), 400
-
+ 
 # Get All Schools
 @school_dp.route("/schools", methods=["GET"])
 def get_all_schools():
