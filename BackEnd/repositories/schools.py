@@ -129,11 +129,6 @@ class SchoolDetails:
     # Change password
     def change_password(self, school_id: int, old_password: str, new_password: str) -> bool:
         try:
-            # Ensure passwords are strings
-            if not isinstance(old_password, str) or not isinstance(new_password, str):
-                print("Error: Passwords must be strings.")
-                return False
-
             school = self.db_session.query(School).filter_by(school_id=school_id).first()
             if not school or not school.check_password(old_password):
                 return False
