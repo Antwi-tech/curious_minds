@@ -164,12 +164,13 @@ def login_school():
     except Exception as e:
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
     
+    
 # change password with athentication
 @school_dp.route("/change_password/<int:school_id>", methods=["PATCH"])
 @jwt_required()
 def change_password(school_id):
     current_user_id = get_jwt_identity()  # returns string now
-    if int(current_user_id) != school_id:  # ✅ cast back to int for comparison
+    if int(current_user_id) != school_id: 
         return jsonify({"error": "Unauthorized"}), 403
 
     data = request.get_json()
