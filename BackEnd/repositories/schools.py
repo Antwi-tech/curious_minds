@@ -140,3 +140,4 @@ class SchoolDetails:
             self.db_session.rollback()
             print(f"Error changing password: {e}")
             return False        
+    
