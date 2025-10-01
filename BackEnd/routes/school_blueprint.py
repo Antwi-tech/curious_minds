@@ -165,13 +165,11 @@ def login_school():
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
     
     
-# change password with athentication
-@school_dp.route("/change_password/<int:school_id>", methods=["PATCH"])
+# Change password (school must be logged in)
+@school_dp.route("/change_password", methods=["PATCH"])
 @jwt_required()
-def change_password(school_id):
-    current_user_id = get_jwt_identity()  # returns string now
-    if int(current_user_id) != school_id: 
-        return jsonify({"error": "Unauthorized"}), 403
+def change_password():
+    current_user_id = get_jwt_identity()  # school_id from JWT
 
     data = request.get_json()
     old_password = data.get("old_password")
@@ -180,10 +178,13 @@ def change_password(school_id):
     if not old_password or not new_password:
         return jsonify({"error": "Both old and new passwords are required"}), 400
 
-    success = school.change_password(school_id, old_password, new_password)
+    success = school.change_password(current_user_id, old_password, new_password)
+
     if success:
         return jsonify({"message": "Password updated successfully"}), 200
     return jsonify({"error": "Failed to update password. Check old password."}), 400
+
+ 
  
 # Get All Schools
 @school_dp.route("/schools", methods=["GET"])
@@ -214,3 +215,36 @@ def get_all_schools():
 
     except Exception as e:
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
+
+
+# refresh jwt access token
+@school_dp.route("/token/refresh", methods=["POST"])
+@jwt_required(refresh=True)  # requires refresh token
+def refresh_access_token():
+    current_user_id = get_jwt_identity()
+    new_access_token = create_access_token(identity=current_user_id)
+    return jsonify({
+        "access_token": new_access_token,
+        "message": "New access token generated"
+    }), 200
+    
+    
+    
+# Fetch school details     
+@school_dp.route("/school/profile", methods=["GET"])
+@jwt_required()
+def get_profile():
+    current_user_id = get_jwt_identity()
+    school_obj = school.get_school_by_id(current_user_id)
+
+    if not school_obj:
+        return jsonify({"error": "School not found"}), 404
+
+    return jsonify({
+        "school_id": school_obj.school_id,
+        "school_name": school_obj.school_name,
+        "email": school_obj.email,
+        "region": school_obj.region,
+        "is_active": school_obj.is_active
+    }), 200
+    
