@@ -1,5 +1,4 @@
 from config import SessionLocal
-from sqlalchemy.orm import Session
 from models import School
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from typing import Optional
