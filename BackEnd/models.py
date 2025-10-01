@@ -47,7 +47,7 @@ class Admin(Base, PasswordMixin):
     email = Column(String(100), nullable=False, unique=True, index=True)
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
     def __repr__(self):
         return f"<Admin(id={self.id}, email={self.email})>"
 
