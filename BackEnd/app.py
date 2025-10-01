@@ -1,3 +1,4 @@
+from datetime import timedelta
 import os
 from flask import Flask, jsonify , request
 from routes.school_blueprint import school_dp
@@ -15,6 +16,8 @@ jwt = JWTManager(app)
 
 
 app.register_blueprint(school_dp, url_prefix='/school')
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)  # short-lived access token
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)    # refresh token valid for 30 days
 
 school = schools.SchoolDetails()
 @app.route("/")
