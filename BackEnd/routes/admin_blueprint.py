@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from repositories.admin import AdminDetails
 from sqlalchemy.exc import SQLAlchemyError
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
     
 admin_dp = Blueprint("admin", __name__)  
 admin = AdminDetails()
@@ -44,8 +44,8 @@ def add_admin():
 
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
-    
-# Admin Login
+ 
+# Admin login
 @admin_dp.route("/login", methods=["POST"])
 def login_admin():
     data = request.get_json()
@@ -60,12 +60,13 @@ def login_admin():
         if not admin_user:
             return jsonify({"error": "Invalid credentials"}), 401
 
-        # Create access & refresh tokens
         access_token = create_access_token(identity={"id": admin_user.id, "role": "admin"})
-        
+        refresh_token = create_refresh_token(identity={"id": admin_user.id, "role": "admin"})
+
         return jsonify({
             "message": "Login successful",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "admin": {
                 "id": admin_user.id,
                 "first_name": admin_user.first_name,
@@ -75,8 +76,7 @@ def login_admin():
         }), 200
 
     except SQLAlchemyError as e:
-        return jsonify({"error": f"Database error occurred: {e}"}), 500     
-               
+        return jsonify({"error": f"Database error occurred: {e}"}), 500
 # from flask import Blueprint, request, jsonify
 # from flask_jwt_extended import (
 #     create_access_token,
