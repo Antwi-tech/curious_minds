@@ -44,6 +44,38 @@ def add_admin():
 
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
+    
+# Admin Login
+@admin_dp.route("/login", methods=["POST"])
+def login_admin():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password are required"}), 400
+    
+    try:
+        admin_user = admin.admin_login(email, password)
+        if not admin_user:
+            return jsonify({"error": "Invalid credentials"}), 401
+
+        # Create access & refresh tokens
+        access_token = create_access_token(identity={"id": admin_user.id, "role": "admin"})
+        
+        return jsonify({
+            "message": "Login successful",
+            "access_token": access_token,
+            "admin": {
+                "id": admin_user.id,
+                "first_name": admin_user.first_name,
+                "last_name": admin_user.last_name,
+                "email": admin_user.email
+            }
+        }), 200
+
+    except SQLAlchemyError as e:
+        return jsonify({"error": f"Database error occurred: {e}"}), 500     
                
 # from flask import Blueprint, request, jsonify
 # from flask_jwt_extended import (
