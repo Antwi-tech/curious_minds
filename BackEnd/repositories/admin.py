@@ -40,7 +40,17 @@ class AdminDetails:
             print(f"Database error occurred: {e}")
             return None
         
-   
+ # Admin login
+    def admin_login(self, email: str, password: str) -> Optional[Admin]:
+        try:
+            admin = self.db_session.query(Admin).filter_by(email=email).first()
+            if admin and admin.check_password(password):
+                return admin
+            return None
+        except SQLAlchemyError as e:
+            print(f"Database error during admin login: {e}")
+            return None
+       
 
     
 # class AdminDetails:
