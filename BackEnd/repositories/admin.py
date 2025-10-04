@@ -31,26 +31,16 @@ class AdminDetails:
             self.db_session.refresh(admin)
 
             return admin
-        except IntegrityError:
+        except IntegrityError as e:
             self.db_session.rollback()
-            print("Error: Admin with this email already exists.")
+            print(f"IntegrityError: {e}")   # <-- log actual DB error
             return None
         except SQLAlchemyError as e:
             self.db_session.rollback()
             print(f"Database error occurred: {e}")
             return None
         
-    # Admin login
-    def login_admin(self, email: str, password: str) -> Optional[Admin]:
-        try:
-            admin = self.db_session.query(Admin).filter_by(email=email).first()
-            if admin and admin.check_password(password):
-                return admin
-            return None
-        except SQLAlchemyError as e:
-            print(f"Database error during admin login: {e}")
-            return None
-    
+   
 
     
 # class AdminDetails:
