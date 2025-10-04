@@ -1,38 +1,42 @@
 from flask import Blueprint, jsonify, request
 from repositories.admin import AdminDetails
 from sqlalchemy.exc import SQLAlchemyError
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+    
+admin_dp = Blueprint("admin", __name__)  
+admin = AdminDetails()
 
-admin_dp = Blueprint("admin", __name__)
-admin_repo = AdminDetails()
 
-# Register/add an admin
+# Register/ add a school
 @admin_dp.route("/register", methods=['POST'])
 def add_admin():
     data = request.get_json()
-    required_fields = ["first_name", "email", "password"]
-
-    # Check for missing fields
+    required_fields = [
+        "first_name", "last_name", "email", "password"
+    ]
+    
+    # check for missing fields
     for field in required_fields:
         if field not in data:
-            return jsonify({"error": f"Missing required field: {field}"}), 400
-
+            return jsonify({"error":f"Missing required field:{field}"}), 400
+    
     try:
-        admin_user = admin_repo.add_admin(
-            first_name=data["first_name"],
-            last_name=data.get("last_name"),
-            middle_name=data.get("middle_name"),
-            email=data["email"],
-            password=data["password"]
+        admin_usr = admin.add_admin(
+            first_name = data["first_name"],
+            last_name = data["last_name"],
+            middle_name = data["middle_name"],
+            email = data["email"],
+            password = data["password"]   
         )
-
-        if admin_user:
+        
+        if admin_usr:
             return jsonify({
                 "message": "Admin registered successfully",
-                "admin_user": {
-                    "first_name": admin_user.first_name,
-                    "middle_name": admin_user.middle_name,
-                    "last_name": admin_user.last_name,
-                    "email": admin_user.email,
+                "admin user": {
+                    "first_name": admin_usr.first_name,
+                    "middle_name": admin_usr.middle_name,
+                    "last_name": admin_usr.last_name,
+                    "email": admin_usr.email,
                 }
             }), 201
         else:
@@ -40,8 +44,7 @@ def add_admin():
 
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
-
-            
+               
 # from flask import Blueprint, request, jsonify
 # from flask_jwt_extended import (
 #     create_access_token,
