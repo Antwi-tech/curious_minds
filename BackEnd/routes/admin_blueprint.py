@@ -144,6 +144,91 @@ def change_admin_password(id):
 
     return jsonify({"message": "Password updated successfully"}), 200
 
+
+# Private apis for admin to manage schools and companies
+# ---------- SCHOOL MANAGEMENT ----------
+@admin_dp.route("/schools/<int:school_id>/verify", methods=["PATCH"])
+@jwt_required()
+def verify_school(school_id):
+    identity = get_jwt_identity()
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    success = admin.verify_school(school_id)
+    if not success:
+        return jsonify({"error": "School not found or failed to verify"}), 400
+    return jsonify({"message": f"School {school_id} verified successfully"}), 200
+
+
+@admin_dp.route("/schools/<int:school_id>/activate", methods=["PATCH"])
+@jwt_required()
+def activate_school(school_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    success = admin.activate_school(school_id)
+    if not success:
+        return jsonify({"error": "School not found or failed to activate"}), 400
+    return jsonify({"message": f"School {school_id} activated successfully"}), 200
+
+
+@admin_dp.route("/schools/<int:school_id>/deactivate", methods=["PATCH"])
+@jwt_required()
+def deactivate_school(school_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    success = admin.deactivate_school(school_id)
+    if not success:
+        return jsonify({"error": "School not found or failed to deactivate"}), 400
+    return jsonify({"message": f"School {school_id} deactivated successfully"}), 200
+
+"""
+# ---------- COMPANY MANAGEMENT ----------
+@admin_dp.route("/admin/companies/<int:company_id>/verify", methods=["PATCH"])
+@jwt_required()
+def verify_company(company_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    success = admin.verify_company(company_id)
+    if not success:
+        return jsonify({"error": "Company not found or failed to verify"}), 400
+    return jsonify({"message": f"Company {company_id} verified successfully"}), 200
+
+
+@admin_dp.route("/admin/companies/<int:company_id>/activate", methods=["PATCH"])
+@jwt_required()
+def activate_company(company_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    success = admin.activate_company(company_id)
+    if not success:
+        return jsonify({"error": "Company not found or failed to activate"}), 400
+    return jsonify({"message": f"Company {company_id} activated successfully"}), 200
+
+
+@admin_dp.route("/admin/companies/<int:company_id>/deactivate", methods=["PATCH"])
+@jwt_required()
+def deactivate_company(company_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    success = admin.deactivate_company(company_id)
+    if not success:
+        return jsonify({"error": "Company not found or failed to deactivate"}), 400
+    return jsonify({"message": f"Company {company_id} deactivated successfully"}), 200
+
+"""
+
+
 # from flask import Blueprint, request, jsonify
 # from flask_jwt_extended import (
 #     create_access_token,
