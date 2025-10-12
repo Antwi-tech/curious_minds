@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from repositories.admin import AdminDetails
 from sqlalchemy.exc import SQLAlchemyError
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jwt, jwt_required, get_jwt_identity
     
 admin_dp = Blueprint("admin", __name__)  
 admin = AdminDetails()
@@ -54,14 +54,26 @@ def login_admin():
 
     if not email or not password:
         return jsonify({"error": "Email and password are required"}), 400
-    
+
     try:
         admin_user = admin.admin_login(email, password)
         if not admin_user:
             return jsonify({"error": "Invalid credentials"}), 401
 
-        access_token = create_access_token(identity={"id": admin_user.id, "role": "admin"})
-        refresh_token = create_refresh_token(identity={"id": admin_user.id, "role": "admin"})
+        # Identity must be a string
+        admin_id = str(admin_user.id)
+
+        # Use additional_claims for role and other metadata
+        additional_claims = {"role": "admin"}
+
+        access_token = create_access_token(
+            identity=admin_id,
+            additional_claims=additional_claims
+        )
+        refresh_token = create_refresh_token(
+            identity=admin_id,
+            additional_claims=additional_claims
+        )
 
         return jsonify({
             "message": "Login successful",
@@ -77,6 +89,61 @@ def login_admin():
 
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
+
+    # Delete an admin
+@admin_dp.route("/admin/<int:id>", methods=["DELETE"])
+@AdminDetails.admin_required
+def delete_admin(id):
+    deleted = admin.delete_admin(id)
+    if not deleted:
+        return jsonify({"error": "Admin not found"}), 404
+    return jsonify({"message": f"Admin {deleted.email} deleted successfully"}), 200
+
+
+# Get all admins
+@admin_dp.route("/admins", methods=["GET"])
+@AdminDetails.admin_required
+def get_all_admins():
+    first_name = request.args.get("first_name")
+    last_name = request.args.get("last_name")
+
+    admins = admin.get_all_admins(first_name=first_name, last_name=last_name)
+    return jsonify({
+        "count": len(admins),
+        "admins": [
+            {
+                "id": a.id,
+                "first_name": a.first_name,
+                "last_name": a.last_name,
+                "email": a.email,
+            } for a in admins
+        ]
+    }), 200
+
+
+# Change admin password
+@admin_dp.route("/change_password/<int:id>", methods=["PATCH"])
+@jwt_required()
+def change_admin_password(id):
+    identity = get_jwt_identity()  # This will be the admin_id (string)
+    claims = get_jwt()             # This gives you the extra claims (like role)
+
+    if claims.get("role") != "admin" or str(identity) != str(id):
+        return jsonify({"error": "Unauthorized"}), 403
+
+    data = request.get_json()
+    old_password = data.get("old_password")
+    new_password = data.get("new_password")
+
+    if not old_password or not new_password:
+        return jsonify({"error": "Old and new passwords are required"}), 400
+
+    success = admin.change_password(id, old_password, new_password)
+    if not success:
+        return jsonify({"error": "Invalid old password"}), 400
+
+    return jsonify({"message": "Password updated successfully"}), 200
+
 # from flask import Blueprint, request, jsonify
 # from flask_jwt_extended import (
 #     create_access_token,
