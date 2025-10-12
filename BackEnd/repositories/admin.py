@@ -1,5 +1,5 @@
 from flask import jsonify
-from flask_jwt_extended import get_jwt_identity, jwt_required
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from config import SessionLocal
 from models import Admin
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
@@ -72,14 +72,14 @@ class AdminDetails:
     def admin_required(fn):
         @jwt_required()
         def wrapper(*args, **kwargs):
-            identity = get_jwt_identity()
-            if not identity or identity.get("role") != "admin":
+            claims = get_jwt()  # access additional_claims
+            identity = get_jwt_identity()  # string admin id
+            if not claims or claims.get("role") != "admin":
                 return jsonify({"error": "Admin access required"}), 403
             return fn(*args, **kwargs)
-
         wrapper.__name__ = fn.__name__
         return wrapper
-
+    
     # Delete an admin
     def delete_admin(self, id: int) -> Optional[Admin]:
         try:
