@@ -1,3 +1,5 @@
+from flask import jsonify
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from config import SessionLocal
 from models import Admin
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
@@ -50,78 +52,78 @@ class AdminDetails:
         except SQLAlchemyError as e:
             print(f"Database error during admin login: {e}")
             return None
-       
+        
 
-    
-# class AdminDetails:
-#     # Register admin
-#     def register_admin(
-#         self,
-#         first_name: str,
-#         email: str,
-#         password: str,
-#         middle_name: Optional[str] = None,
-#         last_name: Optional[str] = None,
-#     ) -> Optional[Admin]:
-#         try:
-#             with SessionLocal() as session:
-#                 new_admin = Admin(
-#                     first_name=first_name,
-#                     middle_name=middle_name,
-#                     last_name=last_name,
-#                     email=email,
-#                 )
-#                 new_admin.set_password(password)  # from PasswordMixin
+    # Admin logout (handled on client)
+    def admin_logout(self):
+        # """
+        # JWT logout is stateless — you can’t ‘log out’ on the backend directly,
+        # but you can tell the client to discard the token or implement token blacklisting.
+        # """
+        try:
+            self.db_session.close()
+            return {"message": "Session closed successfully"}
+        except Exception as e:
+            print(f"Unable to log out: {e}")
+            return {"error": "Logout failed"}
 
-#                 session.add(new_admin)
-#                 session.commit()
-#                 session.refresh(new_admin)
-#                 return new_admin
+    # Role-based access decorator
+    @staticmethod
+    def admin_required(fn):
+        @jwt_required()
+        def wrapper(*args, **kwargs):
+            identity = get_jwt_identity()
+            if not identity or identity.get("role") != "admin":
+                return jsonify({"error": "Admin access required"}), 403
+            return fn(*args, **kwargs)
 
-#         except IntegrityError as e:
-#             print(f"[IntegrityError] {e.orig}")  # full MySQL error in console
-#             return f"IntegrityError: {e.orig}"   # log actual DB error
-            
-#         except SQLAlchemyError as e:
-#             print(f"[SQLAlchemyError] {e}")
-#             return None
+        wrapper.__name__ = fn.__name__
+        return wrapper
 
-#     # Login admin
-#     def login_admin(self, email: str, password: str) -> Optional[Admin]:
-#         try:
-#             with SessionLocal() as session:
-#                 admin = session.query(Admin).filter_by(email=email).first()
-#                 if admin and admin.check_password(password):
-#                     return admin
-#                 return None
-#         except SQLAlchemyError as e:
-#             print(f"[LoginError] {e}")
-#             return None
+    # Delete an admin
+    def delete_admin(self, id: int) -> Optional[Admin]:
+        try:
+            admin = self.db_session.query(Admin).filter_by(id=id).first()
+            if not admin:
+                print("Admin not found")
+                return None
 
-#     # Change password
-#     def change_password(self, admin_id: int, old_password: str, new_password: str) -> bool:
-#         try:
-#             with SessionLocal() as session:
-#                 admin = session.query(Admin).filter_by(id=admin_id).first()
-#                 if not admin or not admin.check_password(old_password):
-#                     return False
-#                 admin.set_password(new_password)
-#                 session.commit()
-#                 return True
-#         except SQLAlchemyError as e:
-#             print(f"[ChangePasswordError] {e}")
-#             return False
+            self.db_session.delete(admin)
+            self.db_session.commit()
+            return admin
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error deleting admin: {e}")
+            return None
 
-#     # Get all admins (optionally filter by first_name)
-#     def get_all_admin(self, first_name: Optional[str] = None) -> List[Admin]:
-#         try:
-#             with SessionLocal() as session:
-#                 query = session.query(Admin)
-#                 if first_name:
-#                     query = query.filter(Admin.first_name.ilike(f"%{first_name}%"))
-#                 return query.all()
-#         except SQLAlchemyError as e:
-#             print(f"[GetAllAdminsError] {e}")
-#             return []
+    # Get all admins (filter by name optionally)
+    def get_all_admins(self, first_name: Optional[str] = None, last_name: Optional[str] = None):
+        try:
+            query = self.db_session.query(Admin)
 
+            if first_name:
+                query = query.filter(Admin.first_name.ilike(f"%{first_name}%"))
 
+            if last_name:
+                query = query.filter(Admin.last_name.ilike(f"%{last_name}%"))
+
+            return query.all()
+
+        except SQLAlchemyError as e:
+            print(f"Error fetching admins: {e}")
+            return []
+
+    # Change password
+    def change_password(self, id: int, old_password: str, new_password: str) -> bool:
+        try:
+            admin_user = self.db_session.query(Admin).filter_by(id=id).first()
+            if not admin_user or not admin_user.check_password(old_password):
+                return False
+
+            admin_user.set_password(new_password)
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error changing password: {e}")
+            return False
