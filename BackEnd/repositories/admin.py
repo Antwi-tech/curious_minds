@@ -1,7 +1,7 @@
 from flask import jsonify
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from config import SessionLocal
-from models import Admin
+from models import Admin, Company, School
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from typing import Optional
 
@@ -126,4 +126,85 @@ class AdminDetails:
         except SQLAlchemyError as e:
             self.db_session.rollback()
             print(f"Error changing password: {e}")
+            return False
+
+        # ---------- SCHOOL MANAGEMENT ----------
+    def verify_school(self, school_id: int) -> bool:
+        try:
+            school = self.db_session.query(School).filter_by(school_id=school_id).first()
+            if not school:
+                return False
+            school.is_verified = True
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error verifying school: {e}")
+            return False
+
+    def activate_school(self, school_id: int) -> bool:
+        try:
+            school = self.db_session.query(School).filter_by(school_id=school_id).first()
+            if not school:
+                return False
+            school.is_active = True
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error activating school: {e}")
+            return False
+
+    def deactivate_school(self, school_id: int) -> bool:
+        try:
+            school = self.db_session.query(School).filter_by(school_id=school_id).first()
+            if not school:
+                return False
+            school.is_active = False
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error deactivating school: {e}")
+            return False
+
+
+    # ---------- COMPANY MANAGEMENT ----------
+    def verify_company(self, company_id: int) -> bool:
+        try:
+            company = self.db_session.query(Company).filter_by(company_id=company_id).first()
+            if not company:
+                return False
+            company.is_verified = True
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error verifying company: {e}")
+            return False
+
+    def activate_company(self, company_id: int) -> bool:
+        try:
+            company = self.db_session.query(Company).filter_by(company_id=company_id).first()
+            if not company:
+                return False
+            company.is_active = True
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error activating company: {e}")
+            return False
+
+    def deactivate_company(self, company_id: int) -> bool:
+        try:
+            company = self.db_session.query(Company).filter_by(company_id=company_id).first()
+            if not company:
+                return False
+            company.is_active = False
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error deactivating company: {e}")
             return False
