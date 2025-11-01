@@ -123,7 +123,7 @@ def get_all_admins():
 
 # Change admin password
 @admin_dp.route("/change_password/<int:id>", methods=["PATCH"])
-@jwt_required()
+@AdminDetails.admin_required
 def change_admin_password(id):
     identity = get_jwt_identity()  # This will be the admin_id (string)
     claims = get_jwt()             # This gives you the extra claims (like role)
@@ -148,7 +148,7 @@ def change_admin_password(id):
 # Private apis for admin to manage schools and companies
 # ---------- SCHOOL MANAGEMENT ----------
 @admin_dp.route("/schools/<int:school_id>/verify", methods=["PATCH"])
-@jwt_required()
+@AdminDetails.admin_required
 def verify_school(school_id):
     identity = get_jwt_identity()
     claims = get_jwt()
@@ -162,7 +162,7 @@ def verify_school(school_id):
 
 
 @admin_dp.route("/schools/<int:school_id>/activate", methods=["PATCH"])
-@jwt_required()
+@AdminDetails.admin_required
 def activate_school(school_id):
     claims = get_jwt()
     if claims.get("role") != "admin":
@@ -227,6 +227,64 @@ def deactivate_company(company_id):
     return jsonify({"message": f"Company {company_id} deactivated successfully"}), 200
 
 """
+
+# -------------------- GET ALL BOOKINGS --------------------
+@admin_dp.route("/bookings", methods=["GET"])
+@AdminDetails.admin_required
+def get_all_bookings():
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    bookings = admin.get_all_bookings()
+    result = [
+        {
+            "id": b.id,
+            "school_id": b.school_id,
+            "company_id": b.company_id,
+            "date": b.date.isoformat() if b.date else None,
+            "status": b.status
+        }
+        for b in bookings
+    ]
+    return jsonify(result), 200
+
+
+# -------------------- GET AVAILABLE TIMES --------------------
+@admin_dp.route("/available_times", methods=["GET"])
+@AdminDetails.admin_required
+def get_available_times():
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    times = admin.get_available_times()
+    result = [
+        {
+            "id": t.id,
+            "company_id": t.company_id,
+            "start_time": t.start_time.isoformat(),
+            "end_time": t.end_time.isoformat(),
+            "is_booked": t.is_booked
+        }
+        for t in times
+    ]
+    return jsonify(result), 200
+
+
+# -------------------- CANCEL BOOKING --------------------
+@admin_dp.route("/bookings/<int:booking_id>/cancel", methods=["PATCH"])
+@AdminDetails.admin_required
+def cancel_booking(booking_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    success = admin.cancel_booking(booking_id)
+    if not success:
+        return jsonify({"error": "Booking not found or failed to cancel"}), 404
+
+    return jsonify({"message": f"Booking {booking_id} successfully cancelled"}), 200
 
 
 # from flask import Blueprint, request, jsonify

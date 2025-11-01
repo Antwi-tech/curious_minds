@@ -1,7 +1,7 @@
 from flask import jsonify
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
 from config import SessionLocal
-from models import Admin, Company, School
+from models import Admin, AvailableTime, Booking, Company, School
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from typing import Optional
 
@@ -207,4 +207,38 @@ class AdminDetails:
         except SQLAlchemyError as e:
             self.db_session.rollback()
             print(f"Error deactivating company: {e}")
+            return False
+
+    # -------------------- GET ALL BOOKINGS --------------------
+    def get_all_bookings(self):
+        try:
+            bookings = self.db_session.query(Booking).all()
+            return bookings
+        except SQLAlchemyError as e:
+            print(f"Error fetching bookings: {e}")
+            return []
+
+    # -------------------- GET AVAILABLE TIMES --------------------
+    def get_available_times(self):
+        try:
+            available_times = self.db_session.query(AvailableTime).all()
+            return available_times
+        except SQLAlchemyError as e:
+            print(f"Error fetching available times: {e}")
+            return []
+
+    # -------------------- CANCEL BOOKING --------------------
+    def cancel_booking(self, booking_id: int) -> bool:
+        try:
+            booking = self.db_session.query(Booking).filter_by(id=booking_id).first()
+            if not booking:
+                return False
+
+            # Instead of deleting, mark it as cancelled
+            booking.status = "cancelled"
+            self.db_session.commit()
+            return True
+        except SQLAlchemyError as e:
+            self.db_session.rollback()
+            print(f"Error cancelling booking: {e}")
             return False
