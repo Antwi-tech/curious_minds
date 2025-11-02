@@ -1,5 +1,5 @@
 from flask import jsonify
-from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
+from flask_jwt_extended import create_access_token, get_jwt, get_jwt_identity, jwt_required
 from config import SessionLocal
 from models import Admin, AvailableTime, Booking, Company, School
 from sqlalchemy.exc import SQLAlchemyError, IntegrityError
@@ -242,3 +242,28 @@ class AdminDetails:
             self.db_session.rollback()
             print(f"Error cancelling booking: {e}")
             return False
+    
+    def refresh_admin_access_token(self):
+        """
+        Refresh an admin's access token using their refresh token.
+        Returns a new access token if valid.
+        """
+        try:
+            current_admin_id = get_jwt_identity()
+            claims = get_jwt()
+
+            # Ensure it's an admin refresh token
+            if claims.get("role") != "admin":
+                return None
+
+            # Generate a new access token
+            new_access_token = create_access_token(
+                identity=current_admin_id,
+                additional_claims={"role": "admin"}
+            )
+
+            return new_access_token
+
+        except Exception as e:
+            print(f"Error refreshing admin token: {e}")
+            return None    
