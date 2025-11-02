@@ -3,7 +3,8 @@ import os
 from flask import Flask, jsonify 
 from routes.school_blueprint import school_dp 
 from routes.admin_blueprint import admin_dp
-from repositories import schools, admin
+from routes.company_blueprint import company_dp
+from repositories import schools, admin, companies
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
 
@@ -23,7 +24,13 @@ app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)    # refresh token 
 school = schools.SchoolDetails()
 @app.route("/status_school")
 def status_school():
-    return jsonify({"status": "School API is running"}), 200   
+    return jsonify({"status": "School API is running"}), 200  
+
+app.register_blueprint(company_dp, url_prefix='/company')
+company = companies.CompanyDetails()
+@app.route("/status_company")
+def status_comapny():
+    return jsonify({"status": "Company API is running"}), 200   
 
 app.register_blueprint(admin_dp, url_prefix='/admin')
 admin = admin.AdminDetails()
