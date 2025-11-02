@@ -84,8 +84,10 @@ class Company(Base, PasswordMixin):
 
     company_id = Column(Integer, primary_key=True, autoincrement=True)
     company_name = Column(String(255), nullable=False, index=True)
-    company_email = Column(String(100), nullable=False, unique=True, index=True)
-    industry_type = Column(String(100), nullable=False, index=True)
+    email = Column(String(100), nullable=False, unique=True, index=True)
+    industry_type = Column(String(100), nullable=True, index=True)
+    company_address = Column(String(255), nullable=True)
+    region = Column(String(100), nullable=False, index=True)
     contact_person = Column(String(100), nullable=False)
     phone_number = Column(String(20), nullable=False, index=True)
     website = Column(String(100), nullable=True)
