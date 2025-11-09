@@ -18,13 +18,15 @@ jobs:
             - name: change dir
               run: |
                 cd BackEnd
-                pwd
                 echo "Successfully in Backend repository"
-
-            - name: run backend server
-              run: |
-                python3 /BackEnd/app.py  
+                pwd
+                python3 app.py  
                 echo "Backend server runnigng successfuly"
+
+            # - name: run backend server
+            #   run: |
+            #     python3 /BackEnd/app.py  
+            #     echo "Backend server runnigng successfuly"
               
             
 
