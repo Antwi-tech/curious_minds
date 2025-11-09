@@ -1,0 +1,13 @@
+name: testing my first project 
+
+on:
+    push:
+        branches: ['develpment']
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: checkout respository
+              uses: actions/checkout@v4
+              run: echo "building my first job with github actions"   
