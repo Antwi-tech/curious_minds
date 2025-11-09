@@ -12,9 +12,18 @@ jobs:
             - name: testing job
               uses: actions/checkout@v4
 
-            - name: job to run next
-              run: echo "My first job"
+            - name: install project requirements  
+              run: pip install -r requirements.txt 
+
+            - name: change dir
+              run: |
+                cd BackEnd
+                echo "Successfully in Backedn repository"
+            
+            # - name: run backend server
+            #   run: python3 app.py  
               
-              
+            
+
 
               
