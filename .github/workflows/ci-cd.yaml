@@ -20,8 +20,10 @@ jobs:
                 cd BackEnd
                 echo "Successfully in Backend repository"
                 pwd
-                python3 app.py  
-                echo "Backend server runnigng successfuly"
+                nohup python3 app.py  &
+                sleep 5
+                pkill -f app.py
+                echo "Backend server running successfuly"
 
             # - name: run backend server
             #   run: |
