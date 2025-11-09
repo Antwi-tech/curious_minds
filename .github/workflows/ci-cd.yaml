@@ -23,8 +23,8 @@ jobs:
 
             - name: run backend server
               run: |
-                python3 app.py  
-                echo "Backend server runnig=ng successfuly"
+                python3 /BackEnd/app.py  
+                echo "Backend server runnigng successfuly"
               
             
 
