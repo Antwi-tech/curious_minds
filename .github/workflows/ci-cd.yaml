@@ -1,0 +1,20 @@
+name: first job for github actions
+
+on:
+    push:
+        branches: ['development']
+
+jobs:
+    build:
+        runs-on: ubuntu-latest  
+    
+        steps:
+            - name: testing job
+              uses: actions/checkout@v4
+
+            - name: job to run next
+              run: echo "My first job"
+              
+              
+
+              
