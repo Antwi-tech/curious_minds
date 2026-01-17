@@ -186,9 +186,9 @@ def deactivate_school(school_id):
         return jsonify({"error": "School not found or failed to deactivate"}), 400
     return jsonify({"message": f"School {school_id} deactivated successfully"}), 200
 
-"""
+
 # ---------- COMPANY MANAGEMENT ----------
-@admin_dp.route("/admin/companies/<int:company_id>/verify", methods=["PATCH"])
+@admin_dp.route("/company/<int:company_id>/verify", methods=["PATCH"])
 @jwt_required()
 def verify_company(company_id):
     claims = get_jwt()
@@ -226,7 +226,7 @@ def deactivate_company(company_id):
         return jsonify({"error": "Company not found or failed to deactivate"}), 400
     return jsonify({"message": f"Company {company_id} deactivated successfully"}), 200
 
-"""
+
 
 # -------------------- GET ALL BOOKINGS --------------------
 @admin_dp.route("/bookings", methods=["GET"])
@@ -285,6 +285,22 @@ def cancel_booking(booking_id):
         return jsonify({"error": "Booking not found or failed to cancel"}), 404
 
     return jsonify({"message": f"Booking {booking_id} successfully cancelled"}), 200
+
+
+# # -------------------- REFRESH ACCESS TOKEN (ADMIN) --------------------
+# @admin_dp.route("/token/refresh", methods=["POST"])
+# @AdminDetails.admin_required
+# def refresh_admin_access_token():
+#     new_access_token = admin.refresh_admin_access_token()
+
+#     if not new_access_token:
+#         return jsonify({"error": "Invalid or unauthorized refresh token"}), 403
+
+#     return jsonify({
+#         "access_token": new_access_token,
+#         "message": "New admin access token generated"
+#     }), 200
+
 
 
 # from flask import Blueprint, request, jsonify
