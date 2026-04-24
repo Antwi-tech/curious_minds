@@ -7,11 +7,12 @@ from routes.company_blueprint import company_dp
 from repositories import schools, admin, companies
 from flask_jwt_extended import JWTManager
 from dotenv import load_dotenv
+from flask_cors import CORS
 
 
 load_dotenv()
 app = Flask(__name__)
-
+CORS(app)
 # JWT configuration
 app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 jwt = JWTManager(app)
