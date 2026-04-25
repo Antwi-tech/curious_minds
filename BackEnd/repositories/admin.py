@@ -8,265 +8,272 @@ from typing import Optional
 
 class AdminDetails:
     def __init__(self):
-        self.db_session = SessionLocal()
+        pass
 
-    # Register/add an admin
-    def add_admin(
-        self,
-        first_name: str,
-        email: str,
-        password: str,
-        last_name: Optional[str] = None,
-        middle_name: Optional[str] = None
-    ) -> Optional[Admin]:
+    def get_session(self):
+        return SessionLocal()
+
+    def add_admin(self, first_name, email, password, last_name=None, middle_name=None):
+        db = self.get_session()
         try:
-            admin = Admin(
-                first_name=first_name,
-                middle_name=middle_name,
-                last_name=last_name,
-                email=email
-            )
-            admin.set_password(password)  # hash password
-
-            self.db_session.add(admin)
-            self.db_session.commit()
-            self.db_session.refresh(admin)
-
+            admin = Admin(first_name=first_name, middle_name=middle_name, last_name=last_name, email=email)
+            admin.set_password(password)
+            db.add(admin)
+            db.commit()
+            db.refresh(admin)
             return admin
         except IntegrityError as e:
-            self.db_session.rollback()
-            print(f"IntegrityError: {e}")   # <-- log actual DB error
+            db.rollback()
+            print(f"IntegrityError: {e}")
             return None
         except SQLAlchemyError as e:
-            self.db_session.rollback()
-            print(f"Database error occurred: {e}")
+            db.rollback()
+            print(f"Database error: {e}")
             return None
-        
- # Admin login
-    def admin_login(self, email: str, password: str) -> Optional[Admin]:
+        finally:
+            db.close()
+
+    def admin_login(self, email, password):
+        db = self.get_session()
         try:
-            admin = self.db_session.query(Admin).filter_by(email=email).first()
+            admin = db.query(Admin).filter_by(email=email).first()
             if admin and admin.check_password(password):
                 return admin
             return None
         except SQLAlchemyError as e:
-            print(f"Database error during admin login: {e}")
+            print(f"Database error during login: {e}")
             return None
-        
+        finally:
+            db.close()
 
-    # Admin logout (handled on client)
     def admin_logout(self):
-        # """
-        # JWT logout is stateless — you can’t ‘log out’ on the backend directly,
-        # but you can tell the client to discard the token or implement token blacklisting.
-        # """
-        try:
-            self.db_session.close()
-            return {"message": "Session closed successfully"}
-        except Exception as e:
-            print(f"Unable to log out: {e}")
-            return {"error": "Logout failed"}
+        return {"message": "Session closed successfully"}
 
-    # Role-based access decorator
     @staticmethod
     def admin_required(fn):
         @jwt_required()
         def wrapper(*args, **kwargs):
-            claims = get_jwt()  # access additional_claims
-            identity = get_jwt_identity()  # string admin id
+            claims = get_jwt()
             if not claims or claims.get("role") != "admin":
                 return jsonify({"error": "Admin access required"}), 403
             return fn(*args, **kwargs)
         wrapper.__name__ = fn.__name__
         return wrapper
-    
-    # Delete an admin
-    def delete_admin(self, id: int) -> Optional[Admin]:
-        try:
-            admin = self.db_session.query(Admin).filter_by(id=id).first()
-            if not admin:
-                print("Admin not found")
-                return None
 
-            self.db_session.delete(admin)
-            self.db_session.commit()
+    def delete_admin(self, id):
+        db = self.get_session()
+        try:
+            admin = db.query(Admin).filter_by(id=id).first()
+            if not admin:
+                return None
+            db.delete(admin)
+            db.commit()
             return admin
         except SQLAlchemyError as e:
-            self.db_session.rollback()
+            db.rollback()
             print(f"Error deleting admin: {e}")
             return None
+        finally:
+            db.close()
 
-    # Get all admins (filter by name optionally)
-    def get_all_admins(self, first_name: Optional[str] = None, last_name: Optional[str] = None):
+    def get_all_admins(self, first_name=None, last_name=None):
+        db = self.get_session()
         try:
-            query = self.db_session.query(Admin)
-
+            query = db.query(Admin)
             if first_name:
                 query = query.filter(Admin.first_name.ilike(f"%{first_name}%"))
-
             if last_name:
                 query = query.filter(Admin.last_name.ilike(f"%{last_name}%"))
-
             return query.all()
-
         except SQLAlchemyError as e:
             print(f"Error fetching admins: {e}")
             return []
+        finally:
+            db.close()
 
-    # Change password
-    def change_password(self, id: int, old_password: str, new_password: str) -> bool:
+    def change_password(self, id, old_password, new_password):
+        db = self.get_session()
         try:
-            admin_user = self.db_session.query(Admin).filter_by(id=id).first()
+            admin_user = db.query(Admin).filter_by(id=id).first()
             if not admin_user or not admin_user.check_password(old_password):
                 return False
-
             admin_user.set_password(new_password)
-            self.db_session.commit()
+            db.commit()
             return True
         except SQLAlchemyError as e:
-            self.db_session.rollback()
+            db.rollback()
             print(f"Error changing password: {e}")
             return False
+        finally:
+            db.close()
 
-        # ---------- SCHOOL MANAGEMENT ----------
-    def verify_school(self, school_id: int) -> bool:
+    # -------------------- SCHOOL MANAGEMENT --------------------
+    def verify_school(self, school_id):
+        db = self.get_session()
         try:
-            school = self.db_session.query(School).filter_by(school_id=school_id).first()
+            school = db.query(School).filter_by(school_id=school_id).first()
             if not school:
                 return False
             school.is_verified = True
-            self.db_session.commit()
+            db.commit()
             return True
         except SQLAlchemyError as e:
-            self.db_session.rollback()
+            db.rollback()
             print(f"Error verifying school: {e}")
             return False
+        finally:
+            db.close()
 
-    def activate_school(self, school_id: int) -> bool:
+    def activate_school(self, school_id):
+        db = self.get_session()
         try:
-            school = self.db_session.query(School).filter_by(school_id=school_id).first()
+            school = db.query(School).filter_by(school_id=school_id).first()
             if not school:
                 return False
             school.is_active = True
-            self.db_session.commit()
+            db.commit()
             return True
         except SQLAlchemyError as e:
-            self.db_session.rollback()
+            db.rollback()
             print(f"Error activating school: {e}")
             return False
+        finally:
+            db.close()
 
-    def deactivate_school(self, school_id: int) -> bool:
+    def deactivate_school(self, school_id):
+        db = self.get_session()
         try:
-            school = self.db_session.query(School).filter_by(school_id=school_id).first()
+            school = db.query(School).filter_by(school_id=school_id).first()
             if not school:
                 return False
             school.is_active = False
-            self.db_session.commit()
+            db.commit()
             return True
         except SQLAlchemyError as e:
-            self.db_session.rollback()
+            db.rollback()
             print(f"Error deactivating school: {e}")
             return False
+        finally:
+            db.close()
 
-
-    # ---------- COMPANY MANAGEMENT ----------
-    def verify_company(self, company_id: int) -> bool:
+    def get_all_schools(self):
+        db = self.get_session()
         try:
-            company = self.db_session.query(Company).filter_by(company_id=company_id).first()
+            return db.query(School).all()
+        except SQLAlchemyError as e:
+            print(f"Error fetching schools: {e}")
+            return []
+        finally:
+            db.close()
+
+    # -------------------- COMPANY MANAGEMENT --------------------
+    def verify_company(self, company_id):
+        db = self.get_session()
+        try:
+            company = db.query(Company).filter_by(company_id=company_id).first()
             if not company:
                 return False
             company.is_verified = True
-            self.db_session.commit()
+            db.commit()
             return True
         except SQLAlchemyError as e:
-            self.db_session.rollback()
+            db.rollback()
             print(f"Error verifying company: {e}")
             return False
+        finally:
+            db.close()
 
-    def activate_company(self, company_id: int) -> bool:
+    def activate_company(self, company_id):
+        db = self.get_session()
         try:
-            company = self.db_session.query(Company).filter_by(company_id=company_id).first()
+            company = db.query(Company).filter_by(company_id=company_id).first()
             if not company:
                 return False
             company.is_active = True
-            self.db_session.commit()
+            db.commit()
             return True
         except SQLAlchemyError as e:
-            self.db_session.rollback()
+            db.rollback()
             print(f"Error activating company: {e}")
             return False
+        finally:
+            db.close()
 
-    def deactivate_company(self, company_id: int) -> bool:
+    def deactivate_company(self, company_id):
+        db = self.get_session()
         try:
-            company = self.db_session.query(Company).filter_by(company_id=company_id).first()
+            company = db.query(Company).filter_by(company_id=company_id).first()
             if not company:
                 return False
             company.is_active = False
-            self.db_session.commit()
+            db.commit()
             return True
         except SQLAlchemyError as e:
-            self.db_session.rollback()
+            db.rollback()
             print(f"Error deactivating company: {e}")
             return False
+        finally:
+            db.close()
 
-    # -------------------- GET ALL BOOKINGS --------------------
-    def get_all_bookings(self):
+    def get_all_companies(self):
+        db = self.get_session()
         try:
-            bookings = self.db_session.query(Booking).all()
-            return bookings
+            return db.query(Company).all()
+        except SQLAlchemyError as e:
+            print(f"Error fetching companies: {e}")
+            return []
+        finally:
+            db.close()
+
+    # -------------------- BOOKINGS --------------------
+    def get_all_bookings(self):
+        db = self.get_session()
+        try:
+            return db.query(Booking).all()
         except SQLAlchemyError as e:
             print(f"Error fetching bookings: {e}")
             return []
+        finally:
+            db.close()
 
-    # -------------------- GET AVAILABLE TIMES --------------------
-    def get_available_times(self):
+    def cancel_booking(self, booking_id):
+        db = self.get_session()
         try:
-            available_times = self.db_session.query(AvailableTime).all()
-            return available_times
+            booking = db.query(Booking).filter_by(id=booking_id).first()
+            if not booking:
+                return False
+            booking.status = "cancelled"
+            db.commit()
+            return True
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Error cancelling booking: {e}")
+            return False
+        finally:
+            db.close()
+
+    # -------------------- AVAILABLE TIMES --------------------
+    def get_available_times(self):
+        db = self.get_session()
+        try:
+            return db.query(AvailableTime).all()
         except SQLAlchemyError as e:
             print(f"Error fetching available times: {e}")
             return []
+        finally:
+            db.close()
 
-    # -------------------- CANCEL BOOKING --------------------
-    def cancel_booking(self, booking_id: int) -> bool:
-        try:
-            booking = self.db_session.query(Booking).filter_by(id=booking_id).first()
-            if not booking:
-                return False
-
-            # Instead of deleting, mark it as cancelled
-            booking.status = "cancelled"
-            self.db_session.commit()
-            return True
-        except SQLAlchemyError as e:
-            self.db_session.rollback()
-            print(f"Error cancelling booking: {e}")
-            return False
-    
+    # -------------------- REFRESH TOKEN --------------------
     def refresh_admin_access_token(self):
-        """
-        Refresh an admin's access token using their refresh token.
-        Returns a new access token if valid.
-        """
         try:
             current_admin_id = get_jwt_identity()
             claims = get_jwt()
-
-            # Ensure it's an admin refresh token
             if claims.get("role") != "admin":
                 return None
-
-            # Generate a new access token
-            new_access_token = create_access_token(
+            return create_access_token(
                 identity=current_admin_id,
                 additional_claims={"role": "admin"}
             )
-
-            return new_access_token
-
         except Exception as e:
             print(f"Error refreshing admin token: {e}")
-            return None    
-        
-        
-# just to test my pipeline        
+            return None
