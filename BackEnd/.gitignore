@@ -1,3 +1,7 @@
+# Database credentials
 .env
 __pycache__/
+
+# Test admin credentials
+seed_admin.py 
 
