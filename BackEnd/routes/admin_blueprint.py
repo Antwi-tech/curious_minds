@@ -147,6 +147,34 @@ def change_admin_password(id):
 
 # Private apis for admin to manage schools and companies
 # ---------- SCHOOL MANAGEMENT ----------
+
+# -------------------- GET ALL SCHOOLS --------------------
+@admin_dp.route("/schools", methods=["GET"])
+@AdminDetails.admin_required
+def get_all_schools():
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    schools = admin.get_all_schools()
+    result = [
+        {
+            "school_id": s.school_id,
+            "school_name": s.school_name,
+            "email": s.email,
+            "phone_number": s.phone_number,
+            "school_address": s.school_address,
+            "region": s.region,
+            "contact_person": s.contact_person,
+            "website": s.website,
+            "description": s.description,
+            "is_verified": s.is_verified,
+            "is_active": s.is_active,
+        }
+        for s in schools
+    ]
+    return jsonify({"count": len(result), "schools": result}), 200
+
 @admin_dp.route("/schools/<int:school_id>/verify", methods=["PATCH"])
 @AdminDetails.admin_required
 def verify_school(school_id):
@@ -187,8 +215,8 @@ def deactivate_school(school_id):
     return jsonify({"message": f"School {school_id} deactivated successfully"}), 200
 
 
-# ---------- COMPANY MANAGEMENT ----------
-@admin_dp.route("/company/<int:company_id>/verify", methods=["PATCH"])
+# COMPANY MANAGEMENT
+@admin_dp.route("/<int:company_id>/verify", methods=["PATCH"])
 @jwt_required()
 def verify_company(company_id):
     claims = get_jwt()
@@ -201,7 +229,7 @@ def verify_company(company_id):
     return jsonify({"message": f"Company {company_id} verified successfully"}), 200
 
 
-@admin_dp.route("/admin/companies/<int:company_id>/activate", methods=["PATCH"])
+@admin_dp.route("/<int:company_id>/activate", methods=["PATCH"])
 @jwt_required()
 def activate_company(company_id):
     claims = get_jwt()
@@ -214,7 +242,7 @@ def activate_company(company_id):
     return jsonify({"message": f"Company {company_id} activated successfully"}), 200
 
 
-@admin_dp.route("/admin/companies/<int:company_id>/deactivate", methods=["PATCH"])
+@admin_dp.route("/<int:company_id>/deactivate", methods=["PATCH"])
 @jwt_required()
 def deactivate_company(company_id):
     claims = get_jwt()
@@ -225,6 +253,33 @@ def deactivate_company(company_id):
     if not success:
         return jsonify({"error": "Company not found or failed to deactivate"}), 400
     return jsonify({"message": f"Company {company_id} deactivated successfully"}), 200
+
+# GET ALL COMPANIES 
+@admin_dp.route("/companies", methods=["GET"])
+@AdminDetails.admin_required
+def get_all_companies():
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+
+    companies = admin.get_all_companies()
+    result = [
+        {
+            "company_id": c.company_id,
+            "company_name": c.company_name,
+            "email": c.email,
+            "industry_type": c.industry_type,
+            "company_address": c.company_address,
+            "region": c.region,
+            "phone_number": c.phone_number,
+            "contact_person": c.contact_person,
+            "website": c.website,
+            "is_verified": c.is_verified,
+            "is_active": c.is_active,
+        }
+        for c in companies
+    ]
+    return jsonify({"count": len(result), "companies": result}), 200
 
 
 
