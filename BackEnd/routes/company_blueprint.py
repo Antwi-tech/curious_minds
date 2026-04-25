@@ -4,7 +4,7 @@ from repositories.companies import CompanyDetails
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import timedelta
 
-company_dp = Blueprint("company", __name__, url_prefix="/company") 
+company_dp = Blueprint("company", __name__) #, url_prefix="/company") 
 company = CompanyDetails()
 
 
