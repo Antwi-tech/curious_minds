@@ -12,7 +12,7 @@ def register_school():
     data = request.get_json()
     required_fields = [
         "school_name", "email", "password", "school_address",
-        "region", "contact_person", "phone_number", "description"
+        "region", "contact_person", "phone_number",  "description" 
     ]
 
     # Check for missing fields
@@ -30,8 +30,7 @@ def register_school():
             contact_person=data["contact_person"],
             phone_number=data["phone_number"],
             description=data["description"],
-            website=data.get("website"),
-           
+            website=data.get("website"),      
         )
 
         if new_school:
@@ -47,8 +46,8 @@ def register_school():
                     "phone_number": new_school.phone_number,
                     "website": new_school.website,
                     "description": new_school.description,
-                    "is_verified": new_school.is_verified,   # default False
-                    "is_active": new_school.is_active       # default True
+                    "is_verified": new_school.is_verified,
+                    "is_active": new_school.is_active
                 }
             }), 201
         else:
@@ -142,28 +141,35 @@ def login_school():
         return jsonify({"error": "Email and password are required"}), 400
 
     try:
-        school_obj = school.login_school(email, password)  # careful: use your repo object, not blueprint
+        school_obj = school.login_school(email, password)
         if not school_obj:
             return jsonify({"error": "Invalid credentials or inactive account"}), 401
 
-      
-        access_token = create_access_token(identity=str(school_obj.school_id))
+        access_token = create_access_token(
+            identity=str(school_obj.school_id),
+            additional_claims={"role": "school"}
+        )
+        refresh_token = create_access_token(
+            identity=str(school_obj.school_id),
+            additional_claims={"role": "school"}
+        )
 
         return jsonify({
             "message": "Login successful",
             "access_token": access_token,
+            "refresh_token": refresh_token,
             "school": {
                 "school_id": school_obj.school_id,
                 "school_name": school_obj.school_name,
                 "email": school_obj.email,
                 "region": school_obj.region,
-                "is_active": school_obj.is_active
+                "is_active": school_obj.is_active,
+                "is_verified": school_obj.is_verified
             }
         }), 200
 
     except Exception as e:
         return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
-    
     
 # Change password (school must be logged in)
 @school_dp.route("/change_password", methods=["PATCH"])
@@ -247,4 +253,68 @@ def get_profile():
         "region": school_obj.region,
         "is_active": school_obj.is_active
     }), 200
-    
+
+
+# -------------------- Get All Available Slots (for schools to browse) --------------------
+@school_dp.route("/slots", methods=["GET"])
+@jwt_required()
+def get_available_slots():
+        try:
+            slots = school.get_all_available_slots()
+            return jsonify({
+                "count": len(slots),
+                "slots": slots  # already serialized in the repository
+            }), 200
+        except Exception as e:
+            return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500    
+
+# -------------------- Book a Slot --------------------
+@school_dp.route("/bookings", methods=["POST"])
+@jwt_required()
+def book_slot():
+    school_id = int(get_jwt_identity())
+    data = request.get_json()
+    schedule_id = data.get("schedule_id")
+
+    if not schedule_id:
+        return jsonify({"error": "schedule_id is required"}), 400
+
+    result = school.book_slot(school_id, schedule_id)
+    if not result:
+        return jsonify({"error": "Failed to book slot. It may already be booked by your school."}), 400
+
+    return jsonify({
+        "message": "Slot booked successfully",
+        "booking": {
+            "booking_id": result.booking_id,
+            "schedule_id": result.schedule_id,
+            "school_id": result.school_id,
+            "status": result.status,
+            "created_at": result.created_at.isoformat()
+        }
+    }), 201
+
+
+# -------------------- Get School Bookings --------------------
+@school_dp.route("/bookings", methods=["GET"])
+@jwt_required()
+def get_school_bookings():
+    school_id = int(get_jwt_identity())
+    try:
+        bookings = school.get_bookings(school_id)
+        return jsonify({
+            "count": len(bookings),
+            "bookings": bookings  # already serialized
+        }), 200
+    except Exception as e:
+        return jsonify({"error": "An unexpected error occurred", "details": str(e)}), 500
+
+# -------------------- Cancel a Booking --------------------
+@school_dp.route("/bookings/<int:booking_id>/cancel", methods=["PATCH"])
+@jwt_required()
+def cancel_booking(booking_id):
+    school_id = int(get_jwt_identity())
+    success = school.cancel_booking(school_id, booking_id)
+    if not success:
+        return jsonify({"error": "Booking not found or unauthorized"}), 404
+    return jsonify({"message": "Booking cancelled successfully"}), 200    

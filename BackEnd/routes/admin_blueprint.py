@@ -7,7 +7,7 @@ admin_dp = Blueprint("admin", __name__)
 admin = AdminDetails()
 
 
-# Register/ add a school
+# Register admin , not in use right now
 @admin_dp.route("/register", methods=['POST'])
 def add_admin():
     data = request.get_json()
@@ -90,7 +90,7 @@ def login_admin():
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
 
-    # Delete an admin
+    # Delete an admin ,not in use right now
 @admin_dp.route("/admin/<int:id>", methods=["DELETE"])
 @AdminDetails.admin_required
 def delete_admin(id):
@@ -100,7 +100,7 @@ def delete_admin(id):
     return jsonify({"message": f"Admin {deleted.email} deleted successfully"}), 200
 
 
-# Get all admins
+# Get all admins, not in use right now
 @admin_dp.route("/admins", methods=["GET"])
 @AdminDetails.admin_required
 def get_all_admins():
@@ -216,7 +216,7 @@ def deactivate_school(school_id):
 
 
 # COMPANY MANAGEMENT
-@admin_dp.route("/<int:company_id>/verify", methods=["PATCH"])
+@admin_dp.route("/companies/<int:company_id>/verify", methods=["PATCH"])
 @jwt_required()
 def verify_company(company_id):
     claims = get_jwt()
@@ -229,7 +229,7 @@ def verify_company(company_id):
     return jsonify({"message": f"Company {company_id} verified successfully"}), 200
 
 
-@admin_dp.route("/<int:company_id>/activate", methods=["PATCH"])
+@admin_dp.route("/companies/<int:company_id>/activate", methods=["PATCH"])
 @jwt_required()
 def activate_company(company_id):
     claims = get_jwt()
@@ -242,7 +242,7 @@ def activate_company(company_id):
     return jsonify({"message": f"Company {company_id} activated successfully"}), 200
 
 
-@admin_dp.route("/<int:company_id>/deactivate", methods=["PATCH"])
+@admin_dp.route("/companies/<int:company_id>/deactivate", methods=["PATCH"])
 @jwt_required()
 def deactivate_company(company_id):
     claims = get_jwt()

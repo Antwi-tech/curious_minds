@@ -65,7 +65,7 @@ class School(Base, PasswordMixin):
     phone_number = Column(String(20), nullable=False, index=True)
     website = Column(String(100), nullable=True)
     description = Column(Text, nullable=False)
-
+    # school_type= Column(String(255), nullable=False, index=True),
     is_verified = Column(Boolean, default=False, index=True)  # Must be approved by admin
     is_active   = Column(Boolean, default=True, index=True)   
 

@@ -16,8 +16,8 @@ class SchoolDetails:
 
     # -------------------- Register School --------------------
     def add_school(self, school_name, email, password, school_address, region,
-                   contact_person, phone_number, description, website=None,
-                   is_verified=False, is_active=True):
+               contact_person, phone_number, description, website=None,
+               is_verified=False, is_active=True):
         db = self.get_session()
         try:
             new_school = School(
@@ -156,6 +156,107 @@ class SchoolDetails:
             return fn(*args, **kwargs)
         wrapper.__name__ = fn.__name__
         return wrapper
+
+        # -------------------- Get All Available Slots --------------------
+    def get_all_available_slots(self):
+        db = self.get_session()
+        try:
+            from models import AvailableTime, Company
+            slots = db.query(AvailableTime).join(Company).filter(
+                Company.is_active == True,
+                Company.is_verified == True
+            ).all()
+
+            # Extract data while session is still open
+            result = []
+            for s in slots:
+                result.append({
+                    "schedule_id": s.schedule_id,
+                    "company_id": s.company_id,
+                    "company_name": s.company.company_name,
+                    "industry_type": s.company.industry_type,
+                    "company_address": s.company.company_address,
+                    "region": s.company.region,
+                    "start_date": s.start_date.isoformat(),
+                    "end_date": s.end_date.isoformat(),
+                })
+            return result
+        except SQLAlchemyError as e:
+            print(f"Error fetching slots: {e}")
+            return []
+        finally:
+            db.close()
+    
+    # -------------------- Book a Slot --------------------
+    def book_slot(self, school_id: int, schedule_id: int):
+        db = self.get_session()
+        try:
+            from models import Booking
+            booking = Booking(
+                schedule_id=schedule_id,
+                school_id=school_id,
+                status="pending"
+            )
+            db.add(booking)
+            db.commit()
+            db.refresh(booking)
+            return booking
+        except Exception as e:
+            db.rollback()
+            print(f"Error booking slot: {e}")
+            return None
+        finally:
+            db.close()
+
+    # -------------------- Get School Bookings --------------------
+    def get_bookings(self, school_id: int):
+        db = self.get_session()
+        try:
+            from models import Booking
+            bookings = db.query(Booking).filter_by(school_id=school_id).all()
+
+            result = []
+            for b in bookings:
+                result.append({
+                    "booking_id": b.booking_id,
+                    "schedule_id": b.schedule_id,
+                    "status": b.status,
+                    "created_at": b.created_at.isoformat(),
+                    "start_date": b.available_time.start_date.isoformat(),
+                    "end_date": b.available_time.end_date.isoformat(),
+                    "company_name": b.available_time.company.company_name,
+                    "company_address": b.available_time.company.company_address,
+                    "industry_type": b.available_time.company.industry_type,
+                })
+            return result
+        except Exception as e:
+            import traceback
+            traceback.print_exc()  # 👈 this prints the FULL error
+            print(f"Error fetching bookings: {e}")
+            return []
+        finally:
+            db.close()
+
+    # -------------------- Cancel Booking --------------------
+    def cancel_booking(self, school_id: int, booking_id: int) -> bool:
+        db = self.get_session()
+        try:
+            from models import Booking
+            booking = db.query(Booking).filter_by(
+                booking_id=booking_id,
+                school_id=school_id
+            ).first()
+            if not booking:
+                return False
+            booking.status = "cancelled"
+            db.commit()
+            return True
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Error cancelling booking: {e}")
+            return False
+        finally:
+            db.close()    
     
 
 # from config import SessionLocal
