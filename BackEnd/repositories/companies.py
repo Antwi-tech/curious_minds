@@ -214,6 +214,8 @@ class CompanyDetails:
             return []
         finally:
             db.close()
+            
+            
 # -------------------- Update Booking Status --------------------
     def update_booking_status(self, company_id: int, booking_id: int, status: str) -> bool:
         db = self.get_session()

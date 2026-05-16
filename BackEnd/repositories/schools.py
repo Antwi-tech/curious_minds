@@ -231,7 +231,7 @@ class SchoolDetails:
             return result
         except Exception as e:
             import traceback
-            traceback.print_exc()  # 👈 this prints the FULL error
+            traceback.print_exc()  
             print(f"Error fetching bookings: {e}")
             return []
         finally:
@@ -257,7 +257,28 @@ class SchoolDetails:
             return False
         finally:
             db.close()    
-    
+     
+     
+        # -------------------- Update Profile --------------------
+    def update_profile(self, school_id: int, **kwargs):
+        db = self.get_session()
+        try:
+            school = db.query(School).filter_by(school_id=school_id).first()
+            if not school:
+                return None
+            for key, value in kwargs.items():
+                if hasattr(school, key) and value is not None:
+                    setattr(school, key, value)
+            db.commit()
+            db.refresh(school)
+            return school
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Error updating school profile: {e}")
+            return None
+        finally:
+            db.close()       
+        
 
 # from config import SessionLocal
 # from models import School
