@@ -229,26 +229,24 @@ class AdminDetails:
     def get_all_bookings(self):
         db = self.get_session()
         try:
-            return db.query(Booking).all()
+            bookings = db.query(Booking).all()
+            result = []
+            for b in bookings:
+                result.append({
+                    "booking_id": b.booking_id,
+                    "school_id": b.school_id,
+                    "school_name": b.school.school_name,
+                    "company_id": b.available_time.company_id,
+                    "company_name": b.available_time.company.company_name,
+                    "start_date": b.available_time.start_date.isoformat(),
+                    "end_date": b.available_time.end_date.isoformat(),
+                    "status": b.status,
+                    "created_at": b.created_at.isoformat(),
+                })
+            return result
         except SQLAlchemyError as e:
             print(f"Error fetching bookings: {e}")
             return []
-        finally:
-            db.close()
-
-    def cancel_booking(self, booking_id):
-        db = self.get_session()
-        try:
-            booking = db.query(Booking).filter_by(id=booking_id).first()
-            if not booking:
-                return False
-            booking.status = "cancelled"
-            db.commit()
-            return True
-        except SQLAlchemyError as e:
-            db.rollback()
-            print(f"Error cancelling booking: {e}")
-            return False
         finally:
             db.close()
 
@@ -277,3 +275,6 @@ class AdminDetails:
         except Exception as e:
             print(f"Error refreshing admin token: {e}")
             return None
+    
+    
+       
