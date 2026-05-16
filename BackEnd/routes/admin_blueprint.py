@@ -292,17 +292,7 @@ def get_all_bookings():
         return jsonify({"error": "Admin access required"}), 403
 
     bookings = admin.get_all_bookings()
-    result = [
-        {
-            "id": b.id,
-            "school_id": b.school_id,
-            "company_id": b.company_id,
-            "date": b.date.isoformat() if b.date else None,
-            "status": b.status
-        }
-        for b in bookings
-    ]
-    return jsonify(result), 200
+    return jsonify(bookings), 200
 
 
 # -------------------- GET AVAILABLE TIMES --------------------
@@ -342,6 +332,27 @@ def cancel_booking(booking_id):
     return jsonify({"message": f"Booking {booking_id} successfully cancelled"}), 200
 
 
+ # -------------------- GET BOOKINGS BY COMPANY --------------------
+@admin_dp.route("/companies/<int:company_id>/bookings", methods=["GET"])
+@AdminDetails.admin_required
+def get_company_bookings(company_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+    bookings = admin.get_bookings_by_company(company_id)
+    return jsonify(bookings), 200
+
+
+        # -------------------- GET BOOKINGS BY SCHOOL --------------------
+@admin_dp.route("/schools/<int:school_id>/bookings", methods=["GET"])
+@AdminDetails.admin_required
+def get_school_bookings(school_id):
+    claims = get_jwt()
+    if claims.get("role") != "admin":
+        return jsonify({"error": "Admin access required"}), 403
+    bookings = admin.get_bookings_by_school(school_id)
+    return jsonify(bookings), 200
+        
 # # -------------------- REFRESH ACCESS TOKEN (ADMIN) --------------------
 # @admin_dp.route("/token/refresh", methods=["POST"])
 # @AdminDetails.admin_required

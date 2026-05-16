@@ -195,8 +195,7 @@ def create_slot():
 
 
 #  Delete Slot
-@company_dp.route("/slot/delete/<int:schedule_id>", methods=["DELETE"])
-@jwt_required()
+@company_dp.route("/slots/<int:schedule_id>", methods=["DELETE"])
 def delete_slot(schedule_id):
     company_id = int(get_jwt_identity())  
     success = company.delete_slot(company_id, schedule_id)
@@ -204,6 +203,39 @@ def delete_slot(schedule_id):
         return jsonify({"error": "Slot not found or unauthorized"}), 404
     return jsonify({"message": "Slot deleted successfully"}), 200
 
+# -------------------- Update Company Profile --------------------
+@company_dp.route("/profile", methods=["PATCH"])
+@jwt_required()
+def update_profile():
+    company_id = int(get_jwt_identity())
+    data = request.get_json()
+
+    updatable_fields = [
+        "company_name", "email", "industry_type", "company_address",
+        "region", "contact_person", "phone_number", "website", "description"
+    ]
+
+    updates = {k: data[k] for k in updatable_fields if k in data}
+
+    updated = company.update_profile(company_id, **updates)
+    if not updated:
+        return jsonify({"error": "Company not found"}), 404
+
+    return jsonify({
+        "message": "Profile updated successfully",
+        "company": {
+            "company_id": updated.company_id,
+            "company_name": updated.company_name,
+            "email": updated.email,
+            "industry_type": updated.industry_type,
+            "company_address": updated.company_address,
+            "region": updated.region,
+            "contact_person": updated.contact_person,
+            "phone_number": updated.phone_number,
+            "website": updated.website,
+            "description": updated.description,
+        }
+    }), 200
 
 # Get Company Bookings 
 @company_dp.route("/bookings", methods=["GET"])

@@ -190,7 +190,39 @@ def change_password():
         return jsonify({"message": "Password updated successfully"}), 200
     return jsonify({"error": "Failed to update password. Check old password."}), 400
 
- 
+
+# -------------------- Update School Profile --------------------
+@school_dp.route("/profile", methods=["PATCH"])
+@jwt_required()
+def update_profile():
+    school_id = int(get_jwt_identity())
+    data = request.get_json()
+
+    updatable_fields = [
+        "school_name", "email", "school_address", "region",
+        "contact_person", "phone_number", "website", "description"
+    ]
+
+    updates = {k: data[k] for k in updatable_fields if k in data}
+
+    updated = school.update_profile(school_id, **updates)
+    if not updated:
+        return jsonify({"error": "School not found"}), 404
+
+    return jsonify({
+        "message": "Profile updated successfully",
+        "school": {
+            "school_id": updated.school_id,
+            "school_name": updated.school_name,
+            "email": updated.email,
+            "school_address": updated.school_address,
+            "region": updated.region,
+            "contact_person": updated.contact_person,
+            "phone_number": updated.phone_number,
+            "website": updated.website,
+            "description": updated.description,
+        }
+    }), 200 
  
 # Get All Schools
 @school_dp.route("/schools", methods=["GET"])
