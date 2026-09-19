@@ -16,8 +16,13 @@ connection_string = (
 )
 
 # Engine 
-engine = create_engine(connection_string, pool_pre_ping=True)
-
+engine = engine = create_engine(
+    connection_string,
+    pool_pre_ping=True,
+    pool_recycle=280,        # recycle connections every 280 seconds
+    pool_size=5,             # keep 5 connections in the pool
+    max_overflow=10          # allow 10 extra connections if needed
+)
 # Session Factory
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

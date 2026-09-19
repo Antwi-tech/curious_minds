@@ -47,7 +47,7 @@ class Admin(Base, PasswordMixin):
     email = Column(String(100), nullable=False, unique=True, index=True)
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
-
+    is_active = Column(Boolean, default=True, nullable=False, index=True)
     def __repr__(self):
         return f"<Admin(id={self.id}, email={self.email})>"
 
@@ -65,9 +65,13 @@ class School(Base, PasswordMixin):
     phone_number = Column(String(20), nullable=False, index=True)
     website = Column(String(100), nullable=True)
     description = Column(Text, nullable=False)
-
+    # school_type= Column(String(255), nullable=False, index=True),
     is_verified = Column(Boolean, default=False, index=True)  # Must be approved by admin
-    is_active   = Column(Boolean, default=True, index=True)   
+    is_active   = Column(Boolean, default=True, index=True) 
+    
+    ai_confidence = Column(Integer, nullable=True)
+    ai_decision = Column(String(50), nullable=True)
+    ai_reasoning = Column(Text, nullable=True)  
 
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
@@ -84,8 +88,10 @@ class Company(Base, PasswordMixin):
 
     company_id = Column(Integer, primary_key=True, autoincrement=True)
     company_name = Column(String(255), nullable=False, index=True)
-    company_email = Column(String(100), nullable=False, unique=True, index=True)
-    industry_type = Column(String(100), nullable=False, index=True)
+    email = Column(String(100), nullable=False, unique=True, index=True)
+    industry_type = Column(String(100), nullable=True, index=True)
+    company_address = Column(String(255), nullable=True)
+    region = Column(String(100), nullable=False, index=True)
     contact_person = Column(String(100), nullable=False)
     phone_number = Column(String(20), nullable=False, index=True)
     website = Column(String(100), nullable=True)
@@ -93,7 +99,11 @@ class Company(Base, PasswordMixin):
 
     is_verified = Column(Boolean, default=False, index=True)  # Must be approved by admin
     is_active   = Column(Boolean, default=True, index=True)   
-
+      
+    ai_confidence = Column(Integer, nullable=True)
+    ai_decision = Column(String(50), nullable=True)
+    ai_reasoning = Column(Text, nullable=True)
+    
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"), index=True)
     updated_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"))
 

@@ -1,18 +1,43 @@
-from flask import Flask, jsonify , request
-from routes.school_blueprint import school_dp
-from repositories import schools
+from datetime import timedelta
+import os
+from flask import Flask, jsonify 
+from routes.school_blueprint import school_dp 
+from routes.admin_blueprint import admin_dp
+from routes.company_blueprint import company_dp
+from repositories import schools, admin, companies
+from flask_jwt_extended import JWTManager
+from dotenv import load_dotenv
+from flask_cors import CORS
 
 
+load_dotenv()
 app = Flask(__name__)
+CORS(app)
+# JWT configuration
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
+jwt = JWTManager(app)
+
+
 app.register_blueprint(school_dp, url_prefix='/school')
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)  # short-lived access token
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)    # refresh token valid for 30 days
 
 school = schools.SchoolDetails()
-@app.route("/")
-def home():
-    return "Welcome Curious Minds "
-@app.route("/status")
-def status():
-    return jsonify({"status": "API is running"}), 200   
+@app.route("/status_school")
+def status_school():
+    return jsonify({"status": "School API is running"}), 200  
+
+app.register_blueprint(company_dp, url_prefix='/company')
+company = companies.CompanyDetails()
+@app.route("/status_company")
+def status_comapny():
+    return jsonify({"status": "Company API is running"}), 200   
+
+app.register_blueprint(admin_dp, url_prefix='/admin')
+admin = admin.AdminDetails()
+@app.route("/status_admin")
+def status_admin():
+    return jsonify({"status": "Admin API is running"}), 200   
 
 
 if __name__ == "__main__":

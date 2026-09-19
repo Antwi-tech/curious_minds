@@ -2,6 +2,16 @@
 
 CREATE DATABASE IF NOT EXISTS scheduler_db;
 USE scheduler_db;
+
+ALTER TABLE companies
+ADD COLUMN IF NOT EXISTS ai_confidence INT NULL,
+ADD COLUMN IF NOT EXISTS ai_decision VARCHAR(50) NULL,
+ADD COLUMN IF NOT EXISTS ai_reasoning TEXT NULL;
+
+ALTER TABLE schools
+ADD COLUMN IF NOT EXISTS ai_confidence INT NULL,
+ADD COLUMN IF NOT EXISTS ai_decision VARCHAR(50) NULL,
+ADD COLUMN IF NOT EXISTS ai_reasoning TEXT NULL;
 /*
 
 -- Admins
