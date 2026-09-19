@@ -1,21 +1,26 @@
 from flask import Blueprint, jsonify, request
 from repositories.schools import SchoolDetails
 from sqlalchemy.exc import SQLAlchemyError
+# from ai_verification import analyse_school_registration
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
-    
+from ai_description import generate_description_background
+from ai_description import generate_description
+from verification_assistant import verify_organisation
+import threading
+
 school_dp = Blueprint("school", __name__)  
 school = SchoolDetails()
 
 # Register / add a school
-@school_dp.route("/register", methods=['POST'])   
+
+@school_dp.route("/register", methods=['POST'])
 def register_school():
     data = request.get_json()
     required_fields = [
         "school_name", "email", "password", "school_address",
-        "region", "contact_person", "phone_number",  "description" 
+        "region", "contact_person", "phone_number", "description"
     ]
 
-    # Check for missing fields
     for field in required_fields:
         if field not in data:
             return jsonify({"error": f"Missing required field: {field}"}), 400
@@ -30,32 +35,49 @@ def register_school():
             contact_person=data["contact_person"],
             phone_number=data["phone_number"],
             description=data["description"],
-            website=data.get("website"),      
+            website=data.get("website"),
         )
 
-        if new_school:
-            return jsonify({
-                "message": "School registered successfully",
-                "school": {
-                    "school_id": new_school.school_id,
-                    "school_name": new_school.school_name,
-                    "email": new_school.email,
-                    "school_address": new_school.school_address,
-                    "region": new_school.region,
-                    "contact_person": new_school.contact_person,
-                    "phone_number": new_school.phone_number,
-                    "website": new_school.website,
-                    "description": new_school.description,
-                    "is_verified": new_school.is_verified,
-                    "is_active": new_school.is_active
-                }
-            }), 201
-        else:
+        if not new_school:
             return jsonify({"error": "School with this email already exists."}), 409
+
+        # ── Trigger background AI description generation ──
+        generate_description_background(
+            entity_type="school",
+            entity_id=new_school.school_id,
+            data=data,
+            save_callback=school.save_ai_description
+        )
+
+        # ── Trigger background AI verification ─
+
+        def run_school_verification():
+            try:
+                result = verify_organisation("school", data, db_connection=None)
+                school.save_verification_result(new_school.school_id, result)
+                print(f"✅ Verification complete for school {new_school.school_id} | "
+                    f"Score: {result['legitimacy_score']} | "
+                    f"Recommendation: {result['recommendation']}")
+            except Exception as e:
+                print(f"❌ Verification failed for school {new_school.school_id}: {e}")
+
+        threading.Thread(target=run_school_verification, daemon=True).start()
+
+        return jsonify({
+            "message": "School registered successfully",
+            "school": {
+                "school_id": new_school.school_id,
+                "school_name": new_school.school_name,
+                "email": new_school.email,
+                "is_verified": new_school.is_verified,
+                "is_active": new_school.is_active,
+            }
+        }), 201
 
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
     
+   
 # search for school by school name
 @school_dp.route("/search_school", methods=["GET"])
 def get_school():
@@ -283,6 +305,8 @@ def get_profile():
         "school_name": school_obj.school_name,
         "email": school_obj.email,
         "region": school_obj.region,
+        "description": school_obj.description,  
+        "website": school_obj.website,
         "is_active": school_obj.is_active
     }), 200
 
@@ -350,3 +374,25 @@ def cancel_booking(booking_id):
     if not success:
         return jsonify({"error": "Booking not found or unauthorized"}), 404
     return jsonify({"message": "Booking cancelled successfully"}), 200    
+
+
+# -------------------- Generate AI Description --------------------
+
+@school_dp.route("/generate-description", methods=["POST"])
+def generate_school_description():
+    data = request.get_json()
+    if not data.get("school_name"):
+        return jsonify({"error": "School name is required"}), 400
+
+    result = generate_description("school", data)
+
+    if result["success"]:
+        return jsonify({
+            "description": result["description"],
+            "confidence": result["confidence"],
+            "sources_used": result["sources_used"],
+            "ai_provider": result["ai_provider"]
+        }), 200
+    else:
+        return jsonify({"error": result["error"]}), 500
+    

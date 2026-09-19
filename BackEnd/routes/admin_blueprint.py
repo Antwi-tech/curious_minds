@@ -157,24 +157,12 @@ def get_all_schools():
         return jsonify({"error": "Admin access required"}), 403
 
     schools = admin.get_all_schools()
-    result = [
-        {
-            "school_id": s.school_id,
-            "school_name": s.school_name,
-            "email": s.email,
-            "phone_number": s.phone_number,
-            "school_address": s.school_address,
-            "region": s.region,
-            "contact_person": s.contact_person,
-            "website": s.website,
-            "description": s.description,
-            "is_verified": s.is_verified,
-            "is_active": s.is_active,
-        }
-        for s in schools
-    ]
-    return jsonify({"count": len(result), "schools": result}), 200
-
+    return jsonify({
+        "count": len(schools),
+        "schools": schools  # already serialized as dicts in the repository
+    }), 200
+    
+    
 @admin_dp.route("/schools/<int:school_id>/verify", methods=["PATCH"])
 @AdminDetails.admin_required
 def verify_school(school_id):
@@ -263,23 +251,11 @@ def get_all_companies():
         return jsonify({"error": "Admin access required"}), 403
 
     companies = admin.get_all_companies()
-    result = [
-        {
-            "company_id": c.company_id,
-            "company_name": c.company_name,
-            "email": c.email,
-            "industry_type": c.industry_type,
-            "company_address": c.company_address,
-            "region": c.region,
-            "phone_number": c.phone_number,
-            "contact_person": c.contact_person,
-            "website": c.website,
-            "is_verified": c.is_verified,
-            "is_active": c.is_active,
-        }
-        for c in companies
-    ]
-    return jsonify({"count": len(result), "companies": result}), 200
+    return jsonify({
+        "count": len(companies),
+        "companies": companies  # already serialized as dicts in the repository
+    }), 200
+
 
 
 
@@ -353,140 +329,3 @@ def get_school_bookings(school_id):
     bookings = admin.get_bookings_by_school(school_id)
     return jsonify(bookings), 200
         
-# # -------------------- REFRESH ACCESS TOKEN (ADMIN) --------------------
-# @admin_dp.route("/token/refresh", methods=["POST"])
-# @AdminDetails.admin_required
-# def refresh_admin_access_token():
-#     new_access_token = admin.refresh_admin_access_token()
-
-#     if not new_access_token:
-#         return jsonify({"error": "Invalid or unauthorized refresh token"}), 403
-
-#     return jsonify({
-#         "access_token": new_access_token,
-#         "message": "New admin access token generated"
-#     }), 200
-
-
-
-# from flask import Blueprint, request, jsonify
-# from flask_jwt_extended import (
-#     create_access_token,
-#     create_refresh_token,
-#     jwt_required,
-#     get_jwt_identity,
-# )
-# from repositories.admin import AdminDetails
-
-# admin_dp = Blueprint("admin", __name__)
-# admin_repo = AdminDetails()
-
-
-# # Register new admin
-# @admin_dp.route("/register", methods=["POST"])
-# def register_admin():
-#     data = request.get_json() or {}
-#     first_name = data.get("first_name")
-#     email = data.get("email")
-#     password = data.get("password")
-
-#     if not first_name or not email or not password:
-#         return jsonify({"error": "first_name, email, and password are required"}), 400
-
-#     admin = admin_repo.register_admin(
-#         first_name=first_name,
-#         middle_name=data.get("middle_name"),
-#         last_name=data.get("last_name"),
-#         email=email,
-#         password=password,
-#     )
-
-#     if isinstance(admin, str):  # we returned an error message string
-#         return jsonify({"error": admin}), 400
-#     elif not admin:
-#         return jsonify({"error": "Unknown failure"}), 400
-
-#     if not admin:
-#         return jsonify({"error": "Failed to register admin. Check logs for details"}), 409
-
-#     return jsonify({
-#         "message": "Admin registered successfully",
-#         "admin": {
-#             "id": admin.id,
-#             "first_name": admin.first_name,
-#             "email": admin.email,
-#             "is_active": admin.is_active,
-#         },
-#     }), 201
-
-
-# # Login admin
-# @admin_dp.route("/login", methods=["POST"])
-# def login_admin():
-#     data = request.get_json() or {}
-#     email = data.get("email")
-#     password = data.get("password")
-
-#     if not email or not password:
-#         return jsonify({"error": "email and password are required"}), 400
-
-#     admin = admin_repo.login_admin(email, password)
-#     if not admin:
-#         return jsonify({"error": "Invalid credentials"}), 401
-
-#     access_token = create_access_token(identity=admin.id, fresh=True)
-#     refresh_token = create_refresh_token(identity=admin.id)
-
-#     return jsonify({
-#         "message": "Login successful",
-#         "access_token": access_token,
-#         "refresh_token": refresh_token,
-#         "admin": {
-#             "id": admin.id,
-#             "first_name": admin.first_name,
-#             "email": admin.email,
-#         },
-#     }), 200
-
-
-# # Get all admins
-# @admin_dp.route("/users", methods=["GET"])
-# @jwt_required()  # protect with JWT
-# def get_all_admins():
-#     first_name = request.args.get("first_name")
-#     admins = admin_repo.get_all_admin(first_name=first_name)
-
-#     return jsonify({
-#         "admins": [
-#             {
-#                 "id": usr.id,
-#                 "first_name": usr.first_name,
-#                 "email": usr.email,
-#                 "is_active": usr.is_active,
-#             }
-#             for usr in admins
-#         ],
-#         "count": len(admins),
-#     }), 200
-
-
-# # Change password
-# @admin_dp.route("/change-password", methods=["POST"])
-# @jwt_required()
-# def change_password():
-#     data = request.get_json() or {}
-#     old_password = data.get("old_password")
-#     new_password = data.get("new_password")
-
-#     if not old_password or not new_password:
-#         return jsonify({"error": "old_password and new_password are required"}), 400
-
-#     admin_id = get_jwt_identity()
-#     success = admin_repo.change_password(admin_id, old_password, new_password)
-
-#     if not success:
-#         return jsonify({"error": "Password change failed"}), 400
-
-#     return jsonify({"message": "Password updated successfully"}), 200
-
-

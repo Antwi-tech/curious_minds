@@ -3,6 +3,10 @@ from flask_jwt_extended import create_access_token, create_refresh_token, jwt_re
 from repositories.companies import CompanyDetails
 from sqlalchemy.exc import SQLAlchemyError
 from datetime import timedelta
+from ai_description import generate_description_background
+from ai_description import generate_description
+import threading
+from verification_assistant import verify_organisation
 
 company_dp = Blueprint("company", __name__)
 company = CompanyDetails()
@@ -13,7 +17,9 @@ company = CompanyDetails()
 @company_dp.route("/register", methods=["POST"])
 def register_company():
     data = request.get_json()
-    required_fields = ["company_name", "email", "password", "contact_person", "company_address", "region", "phone_number", "description", "industry_type"]
+    required_fields = ["company_name", "email", "password", "contact_person",
+                       "company_address", "region", "phone_number",
+                       "description", "industry_type"]
 
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
@@ -31,24 +37,49 @@ def register_company():
             industry_type=data["industry_type"],
             website=data.get("website"),
         )
-        if new_company:
-            return jsonify({
-                "message": "Company registered successfully",
-                "company": {
-                    "company_id": new_company.company_id,
-                    "company_name": new_company.company_name,
-                    "email": new_company.email,
-                    "industry_type": new_company.industry_type,
-                    "is_verified": new_company.is_verified,
-                    "is_active": new_company.is_active
-                }
-            }), 201
-        else:
+
+        if not new_company:
             return jsonify({"error": "Company with this email already exists."}), 409
+
+        # ── Trigger background AI description generation ──
+        generate_description_background(
+            entity_type="company",
+            entity_id=new_company.company_id,
+            data=data,
+            save_callback=company.save_ai_description
+        )
+
+        # ── Trigger background AI verification ──
+        company_id_snapshot = new_company.company_id
+        data_snapshot = dict(data)
+
+        def run_company_verification():
+            try:
+                result = verify_organisation("company", data_snapshot, db_connection=None)
+                company.save_verification_result(company_id_snapshot, result)
+                print(f"✅ Verification complete for company {company_id_snapshot} | "
+                      f"Score: {result['legitimacy_score']} | "
+                      f"Recommendation: {result['recommendation']}")
+            except Exception as e:
+                print(f"❌ Verification failed for company {company_id_snapshot}: {e}")
+
+        threading.Thread(target=run_company_verification, daemon=True).start()
+
+        return jsonify({
+            "message": "Company registered successfully",
+            "company": {
+                "company_id": new_company.company_id,
+                "company_name": new_company.company_name,
+                "email": new_company.email,
+                "industry_type": new_company.industry_type,
+                "is_verified": new_company.is_verified,
+                "is_active": new_company.is_active,
+            }
+        }), 201
 
     except SQLAlchemyError as e:
         return jsonify({"error": f"Database error occurred: {e}"}), 500
-
+    
 
 # Compnay Login
 @company_dp.route("/login", methods=["POST"])
@@ -269,3 +300,60 @@ def reject_booking(booking_id):
     if not success:
         return jsonify({"error": "Booking not found or unauthorized"}), 404
     return jsonify({"message": "Booking rejected successfully"}), 200
+
+# -------------------- Get All Schools --------------------
+@company_dp.route("/schools", methods=["GET"])
+@jwt_required()
+def get_all_schools():
+    from models import School
+    from config import SessionLocal
+    db = SessionLocal()
+    try:
+        schools = db.query(School).filter_by(
+            is_verified=True,
+            is_active=True
+        ).all()
+        return jsonify({
+            "count": len(schools),
+            "schools": [
+                {
+                    "school_id": s.school_id,
+                    "school_name": s.school_name,
+                    "email": s.email,
+                    "region": s.region,
+                    "school_address": s.school_address,
+                    "contact_person": s.contact_person,
+                    "phone_number": s.phone_number,
+                    "description": s.description,
+                    "website": s.website,
+                    "is_verified": s.is_verified,
+                } for s in schools
+            ]
+        }), 200
+    except Exception as e:
+        return jsonify({"error": "Failed to fetch schools", "details": str(e)}), 500
+    finally:
+        db.close()
+
+        
+
+# -------------------- Generate AI Description --------------------
+@company_dp.route("/generate-description", methods=["POST"])
+def generate_company_description():  
+    data = request.get_json()
+    if not data.get("company_name"):
+        return jsonify({"error": "Company name is required"}), 400
+
+    result = generate_description("company", data)
+
+    if result["success"]:
+        return jsonify({
+            "description": result["description"],
+            "confidence": result["confidence"],
+            "sources_used": result["sources_used"],
+            "ai_provider": result["ai_provider"]
+        }), 200
+    else:
+        return jsonify({"error": result["error"]}), 500
+
+
