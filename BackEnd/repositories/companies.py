@@ -235,3 +235,75 @@ class CompanyDetails:
             return False
         finally:
             db.close()
+            
+
+    def auto_approve_company(self, company_id: int, confidence: int,
+                          decision: str, reasoning: str):
+        db = self.get_session()
+        try:
+            company = db.query(Company).filter_by(company_id=company_id).first()
+            if company:
+                company.is_verified = True
+                company.ai_confidence = confidence
+                company.ai_decision = decision
+                company.ai_reasoning = reasoning
+                db.commit()
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Error auto-approving company: {e}")
+        finally:
+            db.close()
+
+    def save_ai_result(self, company_id: int, confidence: int,
+                    decision: str, reasoning: str):
+        db = self.get_session()
+        try:
+            company = db.query(Company).filter_by(company_id=company_id).first()
+            if company:
+                company.ai_confidence = confidence
+                company.ai_decision = decision
+                company.ai_reasoning = reasoning
+                db.commit()
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Error saving AI result: {e}")
+        finally:
+            db.close()
+            
+            
+    def save_ai_description(self, company_id: int, description: str):
+        db = self.get_session()
+        try:
+            comp = db.query(Company).filter_by(company_id=company_id).first()
+            if comp and description:
+                comp.description = description
+                db.commit()
+                print(f"AI description saved for company {company_id}")
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Error saving AI description: {e}")
+        finally:
+            db.close()        
+            
+    
+    # -------------------- Save Verification Result --------------------
+    def save_verification_result(self, company_id: int, result: dict):
+        db = self.get_session()
+        try:
+            company = db.query(Company).filter_by(company_id=company_id).first()
+            if company:
+                company.ai_confidence = result.get("legitimacy_score", 0)
+                company.ai_decision = result.get("recommendation", "manual_review").upper()
+                company.ai_reasoning = (
+                    f"Score: {result.get('legitimacy_score')}/100 | "
+                    f"Verdict: {result.get('verdict')} | "
+                    f"Summary: {result.get('summary', '')} | "
+                    f"Signals: {', '.join(result.get('signals', []))}"
+                )
+                db.commit()
+                print(f"Verification result saved for company {company_id}")
+        except SQLAlchemyError as e:
+            db.rollback()
+            print(f"Error saving verification result: {e}")
+        finally:
+            db.close()        

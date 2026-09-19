@@ -159,7 +159,26 @@ class AdminDetails:
     def get_all_schools(self):
         db = self.get_session()
         try:
-            return db.query(School).all()
+            schools = db.query(School).all()
+            result = []
+            for s in schools:
+                result.append({
+                    "school_id": s.school_id,
+                    "school_name": s.school_name,
+                    "email": s.email,
+                    "school_address": s.school_address,
+                    "region": s.region,
+                    "contact_person": s.contact_person,
+                    "phone_number": s.phone_number,
+                    "website": s.website,
+                    "description": s.description,
+                    "is_verified": s.is_verified,
+                    "is_active": s.is_active,
+                    "ai_confidence": s.ai_confidence,
+                    "ai_decision": s.ai_decision,
+                    "ai_reasoning": s.ai_reasoning,
+                })
+            return result
         except SQLAlchemyError as e:
             print(f"Error fetching schools: {e}")
             return []
@@ -218,12 +237,33 @@ class AdminDetails:
     def get_all_companies(self):
         db = self.get_session()
         try:
-            return db.query(Company).all()
+            companies = db.query(Company).all()
+            result = []
+            for c in companies:
+                result.append({
+                    "company_id": c.company_id,
+                    "company_name": c.company_name,
+                    "email": c.email,
+                    "industry_type": c.industry_type,
+                    "company_address": c.company_address,
+                    "region": c.region,
+                    "contact_person": c.contact_person,
+                    "phone_number": c.phone_number,
+                    "website": c.website,
+                    "description": c.description,
+                    "is_verified": c.is_verified,
+                    "is_active": c.is_active,
+                    "ai_confidence": c.ai_confidence,
+                    "ai_decision": c.ai_decision,
+                    "ai_reasoning": c.ai_reasoning,
+                })
+            return result
         except SQLAlchemyError as e:
             print(f"Error fetching companies: {e}")
             return []
         finally:
             db.close()
+
 
     # -------------------- BOOKINGS --------------------
     def get_all_bookings(self):
