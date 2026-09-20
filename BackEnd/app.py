@@ -22,6 +22,10 @@ app.register_blueprint(school_dp, url_prefix='/school')
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=15)  # short-lived access token
 app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)    # refresh token valid for 30 days
 
+@app.route("/")
+def home():
+    return "Curious Minds Backend is running!", 200
+
 school = schools.SchoolDetails()
 @app.route("/status_school")
 def status_school():
