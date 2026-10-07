@@ -393,6 +393,19 @@ def generate_school_description():
             "sources_used": result["sources_used"],
             "ai_provider": result["ai_provider"]
         }), 200
+    elif result.get("description"):
+        # Description was generated but flagged for manual review — still return it
+        return jsonify({
+            "description": result["description"],
+            "confidence": result["confidence"],
+            "sources_used": result["sources_used"],
+            "ai_provider": result["ai_provider"],
+            "flagged": True
+        }), 200
     else:
-        return jsonify({"error": result["error"]}), 500
+        return jsonify({
+            "success": False,
+            "action": result.get("action", ""),
+            "error": result.get("error", "Failed to generate description")
+        }), 400
     
