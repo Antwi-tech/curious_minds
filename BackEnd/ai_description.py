@@ -98,16 +98,31 @@ Write only the description. No preamble, no labels, no explanation."""
 def generate_with_gemini(prompt: str) -> str:
     """Calls Google Gemini 3.5 Flash to generate the description."""
     try:
-        from google import genai
-        client = genai.Client(api_key=GEMINI_API_KEY)
+        from google.genai import types
+
         response = client.models.generate_content(
             model="gemini-3.5-flash",
-            contents=prompt
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                max_output_tokens=350,
+                temperature=0.7,
+                http_options=types.HttpOptions(timeout=15000)  # 15 seconds max
+            )
         )
         return response.text.strip()
     except Exception as e:
         print(f"Gemini error: {e}")
         raise e
+    #     from google import genai
+    #     client = genai.Client(api_key=GEMINI_API_KEY)
+    #     response = client.models.generate_content(
+    #         model="gemini-3.5-flash",
+    #         contents=prompt
+    #     )
+    #     return response.text.strip()
+    # except Exception as e:
+    #     print(f"Gemini error: {e}")
+    #     raise e
 
 
 # ─── Step 4: Generate with Groq (fallback) ───────────────────────────────────
